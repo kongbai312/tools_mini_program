@@ -1,0 +1,75 @@
+{
+    "easycom": {
+        "autoscan": true,
+        "custom": {
+            "^u--(.*)": "uview-plus/components/u-$1/u-$1.vue",
+            "^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+            "^u-([^-].*)": "uview-plus/components/u-$1/u-$1.vue"
+        }
+    },
+    "pages": [
+        {
+            "path": "pages/home/index",
+            "style": {
+                "navigationBarTitleText": "",
+                "navigationStyle": "custom",
+                "backgroundColor": "#5AC7F0"
+            }
+        },
+        {
+            "path": "pages/discovery/index",
+            "style": {
+                "navigationBarTitleText": "发现",
+                "navigationStyle": "custom",
+                "backgroundColor": "#F5F7FA"
+            }
+        },
+        {
+            "path": "pages/toolbox/index",
+            "style": {
+                "navigationBarTitleText": "工具箱",
+                "navigationStyle": "custom",
+                "backgroundColor": "#8B5CF6"
+            }
+        },
+        {
+            "path": "pages/profile/index",
+            "style": {
+                "navigationBarTitleText": "我的",
+                "navigationStyle": "custom",
+                "backgroundColor": "#FF8FAB"
+            }
+        }
+    ],
+    "globalStyle": {
+        "navigationBarTextStyle": "white",
+        "navigationBarTitleText": "工具箱",
+        "navigationBarBackgroundColor": "#5B7FFF",
+        "backgroundColor": "#F5F7FA",
+        "backgroundTextStyle": "light"
+    },
+    "tabBar": {
+        "custom": true,
+        "color": "#999999",
+        "selectedColor": "#5B7FFF",
+        "backgroundColor": "#FFFFFF",
+        "list": [
+            {
+                "pagePath": "pages/home/index",
+                "text": "首页"
+            },
+            {
+                "pagePath": "pages/discovery/index",
+                "text": "发现"
+            },
+            {
+                "pagePath": "pages/toolbox/index",
+                "text": "工具"
+            },
+            {
+                "pagePath": "pages/profile/index",
+                "text": "我的"
+            }
+        ]
+    }
+}
