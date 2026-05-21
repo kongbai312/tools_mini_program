@@ -2,11 +2,11 @@
   <view class="profile-page">
     <!-- Pink gradient header -->
     <view class="profile-header">
-      <image class="profile-bg-img" src="/static/imgs/my_bg.png" mode="aspectFill" />
-      <view class="status-placeholder" :style="{ height: statusBarHeight + 'px' }" />
+      <image class="profile-bg-img" :src="IMG.myBg" mode="aspectFill" />
+      <view class="status-placeholder" :style="{ height: layout.navBarHeight + 'px' }" />
 
       <!-- Top action buttons -->
-      <view class="header-actions">
+      <view class="header-actions" :style="{ paddingRight: safeRightGap(24) + 'px' }">
         <view class="action-btn" @tap="onShirt">
           <text class="action-icon">🎁</text>
         </view>
@@ -23,7 +23,7 @@
       <!-- User info -->
       <view class="user-info">
         <view class="avatar-wrap">
-          <image class="avatar" src="/static/imgs/my_role.png" mode="aspectFill" />
+          <image class="avatar" :src="IMG.myRole" mode="aspectFill" />
         </view>
         <view class="user-detail">
           <text class="nickname">{{ store.nickname }}</text>
@@ -134,7 +134,7 @@
       <!-- Decorative cat character -->
       <image
         class="cat-role"
-        src="/static/imgs/my_role.png"
+        :src="IMG.myRole"
         mode="widthFix"
       />
 
@@ -147,21 +147,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, reactive, computed } from 'vue'
+import { reactive, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import TabBar from '@/components/TabBar/index.vue'
+import { useNavBarLayout } from '@/composables/useNavBarLayout'
+
+const IMG = {
+  myBg: '/static/imgs/my_bg.png',
+  myRole: '/static/imgs/my_role.png',
+} as const
 
 const store = useUserStore()
-
-const statusBarHeight = ref(20)
-onMounted(() => {
-  try {
-    const info = uni.getSystemInfoSync()
-    statusBarHeight.value = info.statusBarHeight || 20
-  } catch (e) {
-    statusBarHeight.value = 20
-  }
-})
+const { layout, safeRightGap } = useNavBarLayout()
 
 const menuItems = reactive([
   { id: 1, icon: '💬', label: '反馈与建议', iconBg: '#EEF2FF' },

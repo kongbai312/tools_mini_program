@@ -2,20 +2,20 @@
   <view class="toolbox-page">
     <!-- Purple gradient header banner -->
     <view class="banner">
-      <view class="status-placeholder" :style="{ height: statusBarHeight + 'px' }" />
+      <view class="status-placeholder" :style="{ height: layout.navBarHeight + 'px' }" />
       <!-- Stars decoration -->
       <view class="star star-1">✦</view>
       <view class="star star-2">✦</view>
       <view class="star star-3">✧</view>
 
-      <view class="banner-content">
+      <view class="banner-content" :style="{ paddingRight: safeRightGap(0) + 'px' }">
         <view class="banner-text">
           <text class="banner-title">工具箱</text>
           <text class="banner-subtitle">超多实用工具，生活更便捷</text>
         </view>
         <image
           class="tools-role"
-          src="/static/imgs/tools_role.png"
+          :src="toolsRole"
           mode="widthFix"
         />
       </view>
@@ -113,21 +113,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
 import { useToolsStore } from '@/store/tools'
 import TabBar from '@/components/TabBar/index.vue'
+import { useNavBarLayout } from '@/composables/useNavBarLayout'
 
+const toolsRole = '/static/imgs/tools_role.png'
 const store = useToolsStore()
-
-const statusBarHeight = ref(20)
-onMounted(() => {
-  try {
-    const info = uni.getSystemInfoSync()
-    statusBarHeight.value = info.statusBarHeight || 20
-  } catch (e) {
-    statusBarHeight.value = 20
-  }
-})
+const { layout, safeRightGap } = useNavBarLayout()
 
 const onToolTap = (name: string) => {
   uni.showToast({ title: name, icon: 'none', duration: 800 })

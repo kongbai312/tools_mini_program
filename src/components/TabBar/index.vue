@@ -30,15 +30,15 @@ const tabList = [
 ]
 
 const pageUrls = [
-  '/pages/home/index',
-  '/pages/discovery/index',
-  '/pages/toolbox/index',
-  '/pages/profile/index',
+  '/subpackage/home/index',
+  '/subpackage/discovery/index',
+  '/subpackage/toolbox/index',
+  '/subpackage/profile/index',
 ]
 
 const onTabChange = (index: number) => {
   if (index === props.current) return
-  uni.switchTab({ url: pageUrls[index] })
+  uni.reLaunch({ url: pageUrls[index] })
 }
 </script>
 

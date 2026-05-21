@@ -9,67 +9,86 @@
     },
     "pages": [
         {
-            "path": "pages/home/index",
+            "path": "pages/launch/index",
             "style": {
-                "navigationBarTitleText": "",
                 "navigationStyle": "custom",
                 "backgroundColor": "#5AC7F0"
             }
-        },
-        {
-            "path": "pages/discovery/index",
-            "style": {
-                "navigationBarTitleText": "发现",
-                "navigationStyle": "custom",
-                "backgroundColor": "#F5F7FA"
-            }
-        },
-        {
-            "path": "pages/toolbox/index",
-            "style": {
-                "navigationBarTitleText": "工具箱",
-                "navigationStyle": "custom",
-                "backgroundColor": "#8B5CF6"
-            }
-        },
-        {
-            "path": "pages/profile/index",
-            "style": {
-                "navigationBarTitleText": "我的",
-                "navigationStyle": "custom",
-                "backgroundColor": "#FF8FAB"
-            }
         }
     ],
+    "subPackages": [
+        {
+            "root": "subpackage/home",
+            "name": "home",
+            "pages": [
+                {
+                    "path": "index",
+                    "style": {
+                        "navigationBarTitleText": "",
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#5AC7F0"
+                    }
+                }
+            ]
+        },
+        {
+            "root": "subpackage/discovery",
+            "name": "discovery",
+            "pages": [
+                {
+                    "path": "index",
+                    "style": {
+                        "navigationBarTitleText": "发现",
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F5F7FA"
+                    }
+                }
+            ]
+        },
+        {
+            "root": "subpackage/toolbox",
+            "name": "toolbox",
+            "pages": [
+                {
+                    "path": "index",
+                    "style": {
+                        "navigationBarTitleText": "工具箱",
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#8B5CF6"
+                    }
+                }
+            ]
+        },
+        {
+            "root": "subpackage/profile",
+            "name": "profile",
+            "pages": [
+                {
+                    "path": "index",
+                    "style": {
+                        "navigationBarTitleText": "我的",
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#FF8FAB"
+                    }
+                }
+            ]
+        }
+    ],
+    "preloadRule": {
+        "pages/launch/index": {
+            "network": "all",
+            "packages": ["home"]
+        },
+        "subpackage/home/index": {
+            "network": "all",
+            "packages": ["discovery", "toolbox", "profile"]
+        }
+    },
     "globalStyle": {
         "navigationBarTextStyle": "white",
         "navigationBarTitleText": "工具箱",
         "navigationBarBackgroundColor": "#5B7FFF",
         "backgroundColor": "#F5F7FA",
         "backgroundTextStyle": "light"
-    },
-    "tabBar": {
-        "custom": true,
-        "color": "#999999",
-        "selectedColor": "#5B7FFF",
-        "backgroundColor": "#FFFFFF",
-        "list": [
-            {
-                "pagePath": "pages/home/index",
-                "text": "首页"
-            },
-            {
-                "pagePath": "pages/discovery/index",
-                "text": "发现"
-            },
-            {
-                "pagePath": "pages/toolbox/index",
-                "text": "工具"
-            },
-            {
-                "pagePath": "pages/profile/index",
-                "text": "我的"
-            }
-        ]
     }
 }

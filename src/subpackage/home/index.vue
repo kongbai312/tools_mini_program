@@ -2,21 +2,15 @@
   <view class="home-page">
     <!-- Weather section with gradient background -->
     <view class="weather-section">
-      <!-- Status bar + header -->
-      <view class="status-placeholder" :style="{ height: statusBarHeight + 'px' }" />
+      <!-- 顶部安全区：状态栏 + 微信胶囊 -->
+      <view class="status-placeholder" :style="{ height: layout.navBarHeight + 'px' }" />
       <view class="weather-card">
-        <image class="weather-bg-img" src="/static/imgs/home-bg.png" mode="aspectFill" />
+        <image class="weather-bg-img" :src="IMG.homeBg" mode="aspectFill" />
         <view class="weather-header">
           <view class="location-wrap">
             <text class="local-icon">⌖</text>
             <text class="city-text">{{ weather.city }} {{ weather.district }}</text>
             <text class="local-icon local-icon--muted">⌄</text>
-          </view>
-          <view class="header-right">
-            <text class="wx-emoji">{{ weather.weatherIcon }}</text>
-            <view class="add-btn">
-              <text class="plus-icon">+</text>
-            </view>
           </view>
         </view>
 
@@ -43,7 +37,7 @@
         </view>
         <image
           class="character-img"
-          src="/static/imgs/home_role.png"
+          :src="IMG.homeRole"
           mode="widthFix"
         />
       </view>
@@ -56,9 +50,26 @@
           <text class="flame-icon">🔥</text>
           <text class="section-title">今日热点</text>
         </view>
-        <view class="source-pill" @tap="cycleSource">
-          <text class="source-pill-text">{{ store.sources[store.activeSource] }}</text>
-          <text class="source-pill-arrow">⌄</text>
+        <view class="source-selector">
+          <view class="source-pill" @tap.stop="toggleSourceMenu">
+            <text class="source-pill-text">{{ store.sources[store.activeSource] }}</text>
+            <view
+              class="source-pill-arrow"
+              :class="{ 'source-pill-arrow--open': sourceOpen }"
+            />
+          </view>
+          <view v-if="sourceOpen" class="source-dropdown">
+            <view
+              v-for="(source, index) in store.sources"
+              :key="source"
+              class="source-option"
+              :class="{ 'source-option--active': store.activeSource === index }"
+              @tap.stop="selectSource(index)"
+            >
+              <text class="source-option-text">{{ source }}</text>
+              <text v-if="store.activeSource === index" class="source-option-check">✓</text>
+            </view>
+          </view>
         </view>
       </view>
 
@@ -92,34 +103,42 @@
 
     <!-- Tab bar -->
     <TabBar :current="0" />
+
+    <view v-if="sourceOpen" class="source-mask" @tap="closeSourceMenu" />
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useWeatherStore } from '@/store/weather'
 import TabBar from '@/components/TabBar/index.vue'
+import { useNavBarLayout } from '@/composables/useNavBarLayout'
+
+const IMG = {
+  homeBg: '/static/imgs/home-bg.png',
+  homeRole: '/static/imgs/home_role.png',
+} as const
 
 const store = useWeatherStore()
 const weather = computed(() => store.weather)
-
-const statusBarHeight = ref(20)
-onMounted(() => {
-  try {
-    const info = uni.getSystemInfoSync()
-    statusBarHeight.value = info.statusBarHeight || 20
-  } catch (e) {
-    statusBarHeight.value = 20
-  }
-})
+const { layout } = useNavBarLayout()
+const sourceOpen = ref(false)
 
 const onTopicTap = (title: string) => {
   uni.showToast({ title: '正在搜索...', icon: 'none', duration: 1000 })
 }
 
-const cycleSource = () => {
-  const nextIndex = (store.activeSource + 1) % store.sources.length
-  store.setSource(nextIndex)
+const toggleSourceMenu = () => {
+  sourceOpen.value = !sourceOpen.value
+}
+
+const closeSourceMenu = () => {
+  sourceOpen.value = false
+}
+
+const selectSource = (index: number) => {
+  store.setSource(index)
+  sourceOpen.value = false
 }
 </script>
 
@@ -140,7 +159,7 @@ const cycleSource = () => {
 
 .weather-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   min-height: 378rpx;
   border-radius: 28rpx;
   border: 2rpx solid rgba(255, 255, 255, 0.62);
@@ -154,6 +173,7 @@ const cycleSource = () => {
   width: 100%;
   height: 100%;
   opacity: 0.42;
+  border-radius: 28rpx;
 }
 
 .status-placeholder {
@@ -223,7 +243,7 @@ const cycleSource = () => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 10rpx 34rpx 12rpx;
+  padding: 10rpx 260rpx 16rpx 34rpx;
   position: relative;
   z-index: 1;
 }
@@ -311,9 +331,10 @@ const cycleSource = () => {
 .character-img {
   position: absolute;
   right: 4rpx;
-  bottom: -32rpx;
-  z-index: 1;
-  width: 320rpx;
+  bottom: -16rpx;
+  z-index: 2;
+  width: 248rpx;
+  pointer-events: none;
 }
 
 /* ─── Topics Card ─── */
@@ -351,14 +372,19 @@ const cycleSource = () => {
   letter-spacing: 1rpx;
 }
 
+.source-selector {
+  position: relative;
+  z-index: 30;
+}
+
 .source-pill {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8rpx;
-  min-width: 146rpx;
+  gap: 16rpx;
+  min-width: 160rpx;
   height: 56rpx;
-  padding: 0 18rpx;
+  padding: 0 22rpx 0 20rpx;
   border: 2rpx solid #FFC7DD;
   border-radius: 999rpx;
   background: #FFF8FC;
@@ -372,9 +398,70 @@ const cycleSource = () => {
 }
 
 .source-pill-arrow {
-  font-size: 28rpx;
-  color: #FF7AAD;
+  width: 10rpx;
+  height: 10rpx;
+  border-right: 3rpx solid #FF5C98;
+  border-bottom: 3rpx solid #FF5C98;
+  transform: rotate(45deg);
+  transition: transform 0.22s ease;
+  flex-shrink: 0;
+  margin-top: -5rpx;
+  margin-left: 4rpx;
+}
+
+.source-pill-arrow--open {
+  transform: rotate(225deg);
+  margin-top: 3rpx;
+}
+
+.source-dropdown {
+  position: absolute;
+  top: calc(100% + 10rpx);
+  right: 0;
+  min-width: 220rpx;
+  padding: 8rpx;
+  border-radius: 20rpx;
+  background: #fff;
+  border: 2rpx solid #FFE3EF;
+  box-shadow: 0 12rpx 36rpx rgba(255, 79, 147, 0.14);
+}
+
+.source-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 14rpx;
+}
+
+.source-option--active {
+  background: #FFF0F6;
+}
+
+.source-option-text {
+  font-size: 26rpx;
+  color: #4A4F63;
   line-height: 1;
+}
+
+.source-option--active .source-option-text {
+  color: #FF4F93;
+  font-weight: 700;
+}
+
+.source-option-check {
+  font-size: 24rpx;
+  color: #FF4F93;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.source-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: transparent;
 }
 
 /* Topic items */

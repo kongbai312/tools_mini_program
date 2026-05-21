@@ -52,29 +52,28 @@ const dailyToolsData: Tool[] = [
 ]
 
 const categoriesData: DiscoveryCategory[] = [
-  { id: 1, name: '动漫', icon: '🎌', bgColor: '#FF6B9D' },
-  { id: 2, name: '游戏', icon: '🎮', bgColor: '#5B7FFF' },
-  { id: 3, name: 'AI绘画', icon: '🎨', bgColor: '#FF8C42' },
-  { id: 4, name: '影视娱乐', icon: '🎬', bgColor: '#E74C3C' },
-  { id: 5, name: '科技数码', icon: '💻', bgColor: '#2196F3' },
-  { id: 6, name: '虚拟偶像', icon: '⭐', bgColor: '#9C27B0' },
-  { id: 7, name: '更多', icon: '➕', bgColor: '#78909C' },
+  { id: 1, name: '动漫', icon: '', bgColor: '#FFE8F0' },
+  { id: 2, name: 'AI', icon: '', bgColor: '#E8F0FF' },
+  { id: 3, name: '科技', icon: '', bgColor: '#FFF3E0' },
+  { id: 4, name: '影视', icon: '', bgColor: '#FFEBEE' },
+  { id: 5, name: 'B站', icon: '', bgColor: '#F3E5F5' },
+  { id: 6, name: '更多', icon: '', bgColor: '#ECEFF1' },
 ]
 
 const recommendArticles: Article[] = [
   {
     id: 1,
     title: '《铃芽之旅》新海诚最新作品深度解析：一场关于成长与告别的旅程',
-    cover: 'https://picsum.photos/id/237/200/150',
-    category: '动漫视听',
-    categoryColor: '#FF6B9D',
+    cover: '',
+    category: '动漫资讯',
+    categoryColor: '#7B6CF6',
     views: '2.1万',
     timeAgo: '1小时前',
   },
   {
     id: 2,
     title: 'AI 绘图工具大盘点：6 款神级工具让你轻松出图',
-    cover: 'https://picsum.photos/id/26/200/150',
+    cover: '',
     category: 'AI 绘画',
     categoryColor: '#FF8C42',
     views: '1.8万',
@@ -83,7 +82,7 @@ const recommendArticles: Article[] = [
   {
     id: 3,
     title: '原神 4.7 版本「纺坠终久之梦」更新内容一览',
-    cover: 'https://picsum.photos/id/42/200/150',
+    cover: '',
     category: '游戏攻略',
     categoryColor: '#5B7FFF',
     views: '3.5万',
@@ -92,7 +91,7 @@ const recommendArticles: Article[] = [
   {
     id: 4,
     title: '虚拟偶像的未来：技术与情感的完美结合',
-    cover: 'https://picsum.photos/id/64/200/150',
+    cover: '',
     category: '虚拟偶像',
     categoryColor: '#9C27B0',
     views: '1.2万',
@@ -101,7 +100,7 @@ const recommendArticles: Article[] = [
   {
     id: 5,
     title: 'Steam 秋季特卖来了！这 10 款游戏绝对值得入手',
-    cover: 'https://picsum.photos/id/91/200/150',
+    cover: '',
     category: '科技数码',
     categoryColor: '#2196F3',
     views: '2.7万',
@@ -110,9 +109,9 @@ const recommendArticles: Article[] = [
   {
     id: 6,
     title: '2024年度最佳国产动画，你看了几部？',
-    cover: 'https://picsum.photos/id/13/200/150',
-    category: '动漫视听',
-    categoryColor: '#FF6B9D',
+    cover: '',
+    category: '动漫资讯',
+    categoryColor: '#7B6CF6',
     views: '4.3万',
     timeAgo: '8小时前',
   },
@@ -122,7 +121,7 @@ const latestArticles: Article[] = [
   {
     id: 7,
     title: 'RTX 5090 显卡正式发布，性能提升高达 40%',
-    cover: 'https://picsum.photos/id/60/200/150',
+    cover: '',
     category: '科技数码',
     categoryColor: '#2196F3',
     views: '8.9万',
@@ -131,16 +130,16 @@ const latestArticles: Article[] = [
   {
     id: 8,
     title: '【新番情报】2024 年冬季必看动画盘点',
-    cover: 'https://picsum.photos/id/15/200/150',
-    category: '动漫视听',
-    categoryColor: '#FF6B9D',
+    cover: '',
+    category: '动漫资讯',
+    categoryColor: '#7B6CF6',
     views: '3.2万',
     timeAgo: '1小时前',
   },
   {
     id: 9,
     title: '初音未来世界巡回演唱会上海场回顾',
-    cover: 'https://picsum.photos/id/29/200/150',
+    cover: '',
     category: '虚拟偶像',
     categoryColor: '#9C27B0',
     views: '6.7万',
