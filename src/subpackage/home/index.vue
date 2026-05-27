@@ -73,32 +73,39 @@
         </view>
       </view>
 
-      <view class="topics-list">
-        <view
-          v-for="topic in store.currentTopics"
-          :key="topic.id"
-          class="topic-item"
-          hover-class="topic-item--hover"
-          @tap="onTopicTap(topic.title)"
-        >
-          <text
-            class="rank-num"
-            :class="{
-              'rank-top1': topic.rank === 1,
-              'rank-top2': topic.rank === 2,
-              'rank-top3': topic.rank === 3,
-            }"
-          >{{ topic.rank }}</text>
-          <text class="topic-title">{{ topic.title }}</text>
-          <view class="topic-right">
-            <view v-if="topic.tag === 'new'" class="tag tag-new"><text>新</text></view>
-            <view v-else-if="topic.tag === 'hot'" class="tag tag-hot"><text>热</text></view>
-            <view v-else-if="topic.tag === 'boom'" class="tag tag-boom"><text>爆</text></view>
-            <view v-else-if="topic.tag === 'video'" class="tag tag-video"><text>折</text></view>
-            <text class="views-count">{{ topic.views }}</text>
+      <scroll-view
+        scroll-y
+        class="topics-scroll"
+        :style="topicsScrollStyle"
+        :show-scrollbar="false"
+      >
+        <view class="topics-list" :style="topicsListStyle">
+          <view
+            v-for="topic in store.currentTopics"
+            :key="topic.id"
+            class="topic-item"
+            hover-class="topic-item--hover"
+            @tap="onTopicTap(topic.title)"
+          >
+            <text
+              class="rank-num"
+              :class="{
+                'rank-top1': topic.rank === 1,
+                'rank-top2': topic.rank === 2,
+                'rank-top3': topic.rank === 3,
+              }"
+            >{{ topic.rank }}</text>
+            <text class="topic-title">{{ topic.title }}</text>
+            <view class="topic-right">
+              <view v-if="topic.tag === 'new'" class="tag tag-new"><text>新</text></view>
+              <view v-else-if="topic.tag === 'hot'" class="tag tag-hot"><text>热</text></view>
+              <view v-else-if="topic.tag === 'boom'" class="tag tag-boom"><text>爆</text></view>
+              <view v-else-if="topic.tag === 'video'" class="tag tag-video"><text>折</text></view>
+              <text class="views-count">{{ topic.views }}</text>
+            </view>
           </view>
         </view>
-      </view>
+      </scroll-view>
     </view>
 
     <!-- Tab bar -->
@@ -109,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useWeatherStore } from '@/store/weather'
 import TabBar from '@/components/TabBar/index.vue'
 import { useNavBarLayout } from '@/composables/useNavBarLayout'
@@ -122,7 +129,46 @@ const IMG = {
 const store = useWeatherStore()
 const weather = computed(() => store.weather)
 const { layout } = useNavBarLayout()
+const instance = getCurrentInstance()
 const sourceOpen = ref(false)
+const topicsScrollHeight = ref(0)
+let heightTimer: ReturnType<typeof setTimeout> | null = null
+
+const topicsScrollStyle = computed(() =>
+  topicsScrollHeight.value > 0 ? { height: `${topicsScrollHeight.value}px` } : {},
+)
+
+const topicsListStyle = computed(() =>
+  topicsScrollHeight.value > 0 ? { minHeight: `${topicsScrollHeight.value}px` } : {},
+)
+
+const calcTopicsScrollHeight = () => {
+  if (!instance) return
+  const query = uni.createSelectorQuery().in(instance)
+  query.select('.topics-card').boundingClientRect()
+  query.select('.card-header').boundingClientRect()
+  query.exec((res) => {
+    const cardH = res[0]?.height ?? 0
+    const headerH = res[1]?.height ?? 0
+    const height = cardH - headerH
+    if (height > 0) {
+      topicsScrollHeight.value = Math.max(height, uni.upx2px(240))
+    }
+  })
+}
+
+onMounted(() => {
+  nextTick(() => {
+    heightTimer = setTimeout(calcTopicsScrollHeight, 50)
+  })
+})
+
+onUnmounted(() => {
+  if (heightTimer !== null) {
+    clearTimeout(heightTimer)
+    heightTimer = null
+  }
+})
 
 const onTopicTap = (title: string) => {
   uni.showToast({ title: '正在搜索...', icon: 'none', duration: 1000 })
@@ -144,13 +190,17 @@ const selectSource = (index: number) => {
 
 <style lang="scss" scoped>
 .home-page {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
   background: linear-gradient(180deg, #E5F7FF 0%, #F7FBFF 42%, #FFFFFF 100%);
-  padding-bottom: 20rpx;
+  overflow: hidden;
 }
 
 /* ─── Weather Section ─── */
 .weather-section {
+  flex-shrink: 0;
   background: linear-gradient(160deg, #4AC8EE 0%, #6BCFF5 40%, #9DDFF8 70%, #C3EDFB 100%);
   padding: 0 20rpx 18rpx;
   position: relative;
@@ -339,19 +389,38 @@ const selectSource = (index: number) => {
 
 /* ─── Topics Card ─── */
 .topics-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   margin: 14rpx 20rpx 0;
   background: #fff;
   border-radius: 28rpx;
   padding: 24rpx 22rpx 18rpx;
   border: 2rpx solid rgba(223, 238, 248, 0.95);
   box-shadow: 0 12rpx 40rpx rgba(35, 55, 95, 0.08);
+  overflow: hidden;
 }
 
 .card-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 0 16rpx;
+}
+
+.topics-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.topics-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
 }
 
 .title-wrap {
@@ -469,7 +538,8 @@ const selectSource = (index: number) => {
   display: flex;
   align-items: center;
   min-height: 58rpx;
-  padding: 3rpx 0;
+  padding: 6rpx 0;
+  flex-shrink: 0;
 }
 
 .topic-item--hover {

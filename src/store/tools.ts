@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 
 export interface Tool {
-  id: number
+  id: string
   name: string
   icon: string
-  bgColor: string
+  bgColor?: string
   url?: string
 }
 
@@ -25,31 +25,24 @@ export interface Article {
   timeAgo: string
 }
 
-const recentToolsData: Tool[] = [
-  { id: 1, name: '原神地图', icon: '🗺️', bgColor: '#4F86C6' },
-  { id: 2, name: '汇率换算', icon: '💱', bgColor: '#52C41A' },
-  { id: 3, name: 'B站封面', icon: '📺', bgColor: '#FB7299' },
-  { id: 4, name: '壁纸大全', icon: '🖼️', bgColor: '#9B59B6' },
-  { id: 5, name: '快递查询', icon: '📦', bgColor: '#FF8C00' },
-]
+const RECENT_STORAGE_KEY = 'toolbox_recent_tools'
 
-const gameToolsData: Tool[] = [
-  { id: 1, name: '原神地图', icon: '🗺️', bgColor: '#4F86C6' },
-  { id: 2, name: '游戏战绩', icon: '🎮', bgColor: '#E74C3C' },
-  { id: 3, name: 'LOL战绩', icon: '⚔️', bgColor: '#C0392B' },
-  { id: 4, name: 'Steam折扣', icon: '🎁', bgColor: '#1B2838' },
-  { id: 5, name: '抽卡模拟', icon: '🃏', bgColor: '#8E44AD' },
-  { id: 6, name: '游戏攻略', icon: '📖', bgColor: '#2ECC71' },
-]
+function loadRecentTools(): Tool[] {
+  try {
+    const raw = uni.getStorageSync(RECENT_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Tool[]
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {
+    /* ignore */
+  }
+  return []
+}
 
-const dailyToolsData: Tool[] = [
-  { id: 1, name: '汇率换算', icon: '💱', bgColor: '#27AE60' },
-  { id: 2, name: '单位换算', icon: '📐', bgColor: '#2980B9' },
-  { id: 3, name: '天气预报', icon: '⛅', bgColor: '#3498DB' },
-  { id: 4, name: '快速查询', icon: '🔍', bgColor: '#E67E22' },
-  { id: 5, name: '记账本', icon: '💰', bgColor: '#F39C12' },
-  { id: 6, name: '日历工具', icon: '📅', bgColor: '#E91E63' },
-]
+function saveRecentTools(tools: Tool[]) {
+  uni.setStorageSync(RECENT_STORAGE_KEY, JSON.stringify(tools))
+}
 
 const categoriesData: DiscoveryCategory[] = [
   { id: 1, name: '动漫', icon: '', bgColor: '#FFE8F0' },
@@ -149,9 +142,7 @@ const latestArticles: Article[] = [
 
 export const useToolsStore = defineStore('tools', {
   state: () => ({
-    recentTools: recentToolsData,
-    gameTools: gameToolsData,
-    dailyTools: dailyToolsData,
+    recentTools: loadRecentTools(),
     categories: categoriesData,
     recommendArticles,
     latestArticles,
@@ -164,6 +155,19 @@ export const useToolsStore = defineStore('tools', {
   actions: {
     setActiveTab(index: number) {
       this.activeTab = index
+    },
+    addRecentTool(tool: Tool) {
+      const filtered = this.recentTools.filter((item) => item.id !== tool.id)
+      this.recentTools = [tool, ...filtered]
+      saveRecentTools(this.recentTools)
+    },
+    removeRecentTool(id: string) {
+      this.recentTools = this.recentTools.filter((item) => item.id !== id)
+      saveRecentTools(this.recentTools)
+    },
+    initRecentTools(tools: Tool[]) {
+      this.recentTools = [...tools]
+      saveRecentTools(this.recentTools)
     },
   },
 })

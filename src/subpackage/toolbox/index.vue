@@ -1,246 +1,243 @@
 <template>
-  <view class="toolbox-page">
-    <!-- Purple gradient header banner -->
+  <view class="toolbox-page" :style="{ '--nav-h': layout.navBarHeight + 'px' }">
+    <image class="page-bg" :src="toolsBg" mode="widthFix" />
+
     <view class="banner">
       <view class="status-placeholder" :style="{ height: layout.navBarHeight + 'px' }" />
-      <!-- Stars decoration -->
-      <view class="star star-1">✦</view>
-      <view class="star star-2">✦</view>
-      <view class="star star-3">✧</view>
 
-      <view class="banner-content" :style="{ paddingRight: safeRightGap(0) + 'px' }">
+      <view class="banner-content" :style="{ paddingRight: safeRightGap(32) + 'px' }">
         <view class="banner-text">
           <text class="banner-title">工具箱</text>
-          <text class="banner-subtitle">超多实用工具，生活更便捷</text>
+          <text class="banner-subtitle">超多实用工具，生活更便捷~</text>
         </view>
-        <image
-          class="tools-role"
-          :src="toolsRole"
-          mode="widthFix"
-        />
       </view>
     </view>
 
-    <!-- Content area (white card) -->
     <view class="content-area">
       <!-- Recently used -->
       <view class="section-block">
         <view class="section-header">
           <text class="section-title">最近使用</text>
-          <view class="edit-btn" @tap="onEdit">
-            <text class="edit-text">编辑</text>
-            <text class="arrow-icon">›</text>
+          <view class="action-btn" @tap="toggleRecentEdit">
+            <text class="action-text">{{ isEditingRecent ? '完成' : '编辑' }}</text>
+            <text v-if="!isEditingRecent" class="action-arrow">›</text>
           </view>
         </view>
-        <scroll-view scroll-x class="recent-scroll" :show-scrollbar="false">
-          <view class="recent-list">
-            <view
-              v-for="tool in store.recentTools"
-              :key="tool.id"
-              class="recent-item"
-              @tap="onToolTap(tool.name)"
-            >
-              <view class="tool-icon-wrap" :style="{ background: tool.bgColor }">
-                <text class="tool-emoji">{{ tool.icon }}</text>
+
+        <view v-if="store.recentTools.length" class="tools-row tools-row--recent">
+          <view
+            v-for="tool in store.recentTools"
+            :key="tool.id"
+            class="tool-item"
+            @tap="onRecentTap(tool)"
+          >
+            <view class="tool-icon-box">
+              <view class="tool-icon-wrap">
+                <image class="tool-icon-img" :src="tool.icon" mode="aspectFit" />
               </view>
-              <text class="tool-name-sm">{{ tool.name }}</text>
+              <view
+                v-if="isEditingRecent"
+                class="tool-delete-btn"
+                @tap.stop="removeRecent(tool.id)"
+              >
+                <text class="tool-delete-icon">×</text>
+              </view>
             </view>
+            <text class="tool-name">{{ tool.name }}</text>
           </view>
-        </scroll-view>
+        </view>
+        <view v-else class="recent-empty">
+          <text class="recent-empty-text">暂无最近使用的工具</text>
+        </view>
       </view>
 
-      <!-- Game tools -->
+      <!-- 王者荣耀类 -->
       <view class="section-block">
         <view class="section-header">
-          <view class="section-title-wrap">
-            <text class="section-icon">🎮</text>
-            <text class="section-title">游戏类</text>
-          </view>
-          <view class="more-btn" @tap="onMoreTap('游戏类')">
-            <text class="more-text">更多</text>
-            <text class="arrow-icon">›</text>
-          </view>
+          <text class="section-title">王者荣耀</text>
         </view>
-        <view class="tools-grid">
+        <view class="tools-row">
           <view
-            v-for="tool in store.gameTools"
+            v-for="tool in wzryTools"
             :key="tool.id"
-            class="grid-tool-item"
-            @tap="onToolTap(tool.name)"
+            class="tool-item"
+            @tap="onToolTap(tool)"
           >
-            <view class="grid-icon-wrap" :style="{ background: tool.bgColor + '20' }">
-              <text class="grid-emoji">{{ tool.icon }}</text>
+            <view class="tool-icon-wrap tool-icon-wrap--sm">
+              <image class="tool-icon-img" :src="tool.icon" mode="aspectFit" />
             </view>
-            <text class="grid-tool-name">{{ tool.name }}</text>
+            <text class="tool-name tool-name--sm">{{ tool.name }}</text>
           </view>
         </view>
       </view>
 
-      <!-- Daily tools -->
+      <!-- 日常类 -->
       <view class="section-block">
         <view class="section-header">
-          <view class="section-title-wrap">
-            <text class="section-icon">☀️</text>
-            <text class="section-title">日常类</text>
-          </view>
-          <view class="more-btn" @tap="onMoreTap('日常类')">
-            <text class="more-text">更多</text>
-            <text class="arrow-icon">›</text>
-          </view>
+          <text class="section-title">日常类</text>
         </view>
-        <view class="tools-grid">
+        <view class="tools-row">
           <view
-            v-for="tool in store.dailyTools"
+            v-for="tool in dailyTools"
             :key="tool.id"
-            class="grid-tool-item"
-            @tap="onToolTap(tool.name)"
+            class="tool-item"
+            @tap="onToolTap(tool)"
           >
-            <view class="grid-icon-wrap" :style="{ background: tool.bgColor + '20' }">
-              <text class="grid-emoji">{{ tool.icon }}</text>
+            <view class="tool-icon-wrap tool-icon-wrap--sm">
+              <image class="tool-icon-img" :src="tool.icon" mode="aspectFit" />
             </view>
-            <text class="grid-tool-name">{{ tool.name }}</text>
+            <text class="tool-name tool-name--sm">{{ tool.name }}</text>
           </view>
         </view>
       </view>
 
-      <!-- Bottom padding for tab bar -->
       <view style="height: 40rpx;" />
     </view>
 
-    <!-- Tab bar -->
+    <view class="tools-role-wrap">
+      <image
+        class="tools-role"
+        :src="toolsRole"
+        mode="heightFix"
+      />
+    </view>
+
     <TabBar :current="2" />
   </view>
 </template>
 
 <script setup lang="ts">
-import { useToolsStore } from '@/store/tools'
+import { ref, onMounted } from 'vue'
+import { useToolsStore, type Tool } from '@/store/tools'
 import TabBar from '@/components/TabBar/index.vue'
 import { useNavBarLayout } from '@/composables/useNavBarLayout'
+import { wzryTools, dailyTools, defaultRecentTools } from './assets'
 
+const toolsBg = '/static/imgs/tools_bg.png'
 const toolsRole = '/static/imgs/tools_role.png'
 const store = useToolsStore()
 const { layout, safeRightGap } = useNavBarLayout()
+const isEditingRecent = ref(false)
 
-const onToolTap = (name: string) => {
-  uni.showToast({ title: name, icon: 'none', duration: 800 })
+onMounted(() => {
+  if (store.recentTools.length === 0) {
+    store.initRecentTools(defaultRecentTools)
+  }
+})
+
+const toggleRecentEdit = () => {
+  isEditingRecent.value = !isEditingRecent.value
 }
 
-const onEdit = () => {
-  uni.showToast({ title: '编辑模式', icon: 'none' })
+const removeRecent = (id: string) => {
+  store.removeRecentTool(id)
 }
 
-const onMoreTap = (category: string) => {
-  uni.showToast({ title: `更多${category}工具`, icon: 'none' })
+const onRecentTap = (tool: Tool) => {
+  if (isEditingRecent.value) return
+  onToolTap(tool)
+}
+
+const onToolTap = (tool: Tool) => {
+  store.addRecentTool(tool)
+  uni.showToast({ title: tool.name, icon: 'none', duration: 800 })
 }
 </script>
 
 <style lang="scss" scoped>
 .toolbox-page {
+  position: relative;
   min-height: 100vh;
-  background: #F5F7FA;
+  background: #fff;
+}
+
+.page-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* ─── Banner ─── */
 .banner {
-  background: linear-gradient(135deg, #7C3AED 0%, #9D5CF5 50%, #C084FC 100%);
-  padding-bottom: 70rpx;
   position: relative;
-  overflow: hidden;
+  z-index: 1;
+  padding-bottom: 72rpx;
 }
 
 .status-placeholder {
   width: 100%;
 }
 
-/* Star decorations */
-.star {
-  position: absolute;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 28rpx;
-  pointer-events: none;
-}
-
-.star-1 {
-  top: 80rpx;
-  left: 40rpx;
-  font-size: 20rpx;
-}
-
-.star-2 {
-  top: 60rpx;
-  right: 200rpx;
-  font-size: 32rpx;
-}
-
-.star-3 {
-  top: 120rpx;
-  left: 160rpx;
-  font-size: 16rpx;
-  opacity: 0.6;
-}
-
 .banner-content {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 20rpx 30rpx 0;
+  position: relative;
+  z-index: 2;
+  padding: 16rpx 32rpx 28rpx;
 }
 
 .banner-text {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-  padding-bottom: 20rpx;
+  gap: 24rpx;
 }
 
 .banner-title {
-  font-size: 52rpx;
+  font-size: 56rpx;
   font-weight: 800;
   color: #fff;
-  letter-spacing: 4rpx;
+  letter-spacing: 2rpx;
+  line-height: 1.1;
 }
 
 .banner-subtitle {
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.4;
+}
+
+.tools-role-wrap {
+  position: absolute;
+  top: calc(var(--nav-h) - 8rpx);
+  right: 0;
+  z-index: 10;
+  width: 300rpx;
+  height: 220rpx;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .tools-role {
-  width: 260rpx;
-  flex-shrink: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 220rpx;
+  width: auto;
 }
 
 /* ─── Content Area ─── */
 .content-area {
-  margin-top: -44rpx;
-  background: #F5F7FA;
-  border-radius: 40rpx 40rpx 0 0;
-  padding-top: 8rpx;
+  margin-top: -40rpx;
+  padding-top: 4rpx;
+  position: relative;
+  z-index: 2;
+  background: transparent;
 }
 
 .section-block {
   background: #fff;
-  border-radius: 24rpx;
-  margin: 16rpx 24rpx;
-  padding: 28rpx 0 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  border-radius: 28rpx;
+  margin: 0 24rpx 20rpx;
+  padding: 28rpx 24rpx 26rpx;
+  box-shadow: 0 8rpx 32rpx rgba(109, 40, 217, 0.08);
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28rpx 20rpx;
-}
-
-.section-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-}
-
-.section-icon {
-  font-size: 32rpx;
+  margin-bottom: 24rpx;
 }
 
 .section-title {
@@ -249,101 +246,124 @@ const onMoreTap = (category: string) => {
   color: #1A1A2E;
 }
 
-.edit-btn,
-.more-btn {
+.action-btn {
   display: flex;
   align-items: center;
-  gap: 4rpx;
+  gap: 2rpx;
 }
 
-.edit-text,
-.more-text {
+.action-text {
   font-size: 26rpx;
-  color: #999;
+  color: #A855F7;
+  font-weight: 500;
 }
 
-.arrow-icon {
-  font-size: 34rpx;
+.action-arrow {
+  font-size: 32rpx;
   line-height: 1;
+  color: #A855F7;
+  margin-top: -2rpx;
+}
+
+.recent-empty {
+  padding: 12rpx 0 8rpx;
+}
+
+.recent-empty-text {
+  font-size: 24rpx;
   color: #999;
 }
 
-/* ─── Recent scroll ─── */
-.recent-scroll {
-  width: 100%;
-}
-
-.recent-list {
+/* ─── Tools row ─── */
+.tools-row {
   display: flex;
-  padding: 0 28rpx;
-  gap: 32rpx;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 28rpx 32rpx;
+  align-items: flex-start;
 }
 
-.recent-item {
+.tools-row--recent {
+  gap: 28rpx 40rpx;
+}
+
+.tool-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12rpx;
   flex-shrink: 0;
+  width: 96rpx;
+}
+
+.tool-icon-box {
+  position: relative;
 }
 
 .tool-icon-wrap {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 26rpx;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.1);
 }
 
-.tool-emoji {
-  font-size: 48rpx;
+.tool-icon-wrap--sm {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 22rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
 }
 
-.tool-name-sm {
+.tool-icon-img {
+  width: 100%;
+  height: 100%;
+}
+
+.tool-delete-btn {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: #FF4D4F;
+  border: 2rpx solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.tool-delete-icon {
+  font-size: 28rpx;
+  line-height: 1;
+  color: #fff;
+  font-weight: 700;
+  margin-top: -2rpx;
+}
+
+.tool-name {
   font-size: 22rpx;
-  color: #555;
+  color: #666;
   text-align: center;
-  max-width: 100rpx;
+  line-height: 1.3;
+  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ─── Tools grid ─── */
-.tools-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24rpx;
-  padding: 0 28rpx;
-}
-
-.grid-tool-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14rpx;
-}
-
-.grid-icon-wrap {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 26rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.grid-emoji {
-  font-size: 48rpx;
-}
-
-.grid-tool-name {
-  font-size: 24rpx;
-  color: #444;
-  text-align: center;
-  font-weight: 500;
+.tool-name--sm {
+  font-size: 20rpx;
+  color: #777;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 </style>
