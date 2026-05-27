@@ -199,11 +199,11 @@ const onToolTap = (tool: Tool) => {
 
 .tools-role-wrap {
   position: absolute;
-  top: calc(var(--nav-h) - 8rpx);
-  right: 0;
+  top: calc(var(--nav-h) - 36rpx);
+  right: 70rpx;
   z-index: 10;
   width: 300rpx;
-  height: 220rpx;
+  height: 300rpx;
   overflow: hidden;
   pointer-events: none;
 }
@@ -211,8 +211,8 @@ const onToolTap = (tool: Tool) => {
 .tools-role {
   position: absolute;
   right: 0;
-  top: 0;
-  height: 220rpx;
+  bottom: 0;
+  height: 300rpx;
   width: auto;
 }
 
