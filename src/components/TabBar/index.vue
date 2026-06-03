@@ -1,6 +1,6 @@
 <template>
   <view class="tabbar-placeholder" />
-  <view class="custom-tabbar">
+  <view class="custom-tabbar" :class="{ 'custom-tabbar--dark': userStore.isDark }">
     <view
       v-for="(item, index) in tabList"
       :key="item.text"
@@ -20,7 +20,10 @@
 </template>
 
 <script setup lang="ts">
+import { useUserStore } from '@/store/user'
+
 const props = defineProps<{ current: number }>()
+const userStore = useUserStore()
 
 const tabList = [
   { icon: '/static/tabs/home-inactive.svg', activeIcon: '/static/tabs/home-active.svg', text: '首页' },
@@ -61,6 +64,12 @@ const onTabChange = (index: number) => {
   border: 2rpx solid rgba(221, 233, 245, 0.92);
   border-radius: 32rpx;
   box-shadow: 0 10rpx 34rpx rgba(42, 82, 126, 0.12);
+}
+
+.custom-tabbar--dark {
+  background: rgba(37, 37, 66, 0.98);
+  border-color: rgba(60, 60, 90, 0.92);
+  box-shadow: 0 10rpx 34rpx rgba(0, 0, 0, 0.28);
 }
 
 .tabbar-item {

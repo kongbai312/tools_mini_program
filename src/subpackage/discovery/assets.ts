@@ -9,3 +9,4 @@ export const categoryIcons: Record<number, string> = {
 
 export const articleCover = '/static/imgs/test.png'
 export const discoverRole = '/static/imgs/discover_role.png'
+export const discoverBg = '/static/imgs/discover_bg.jpg'

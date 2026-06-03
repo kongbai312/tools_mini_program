@@ -42,6 +42,27 @@
                         "navigationStyle": "custom",
                         "backgroundColor": "#F5F7FA"
                     }
+                },
+                {
+                    "path": "search/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F3F0FF"
+                    }
+                },
+                {
+                    "path": "topics/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F3F0FF"
+                    }
+                },
+                {
+                    "path": "article/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F3F0FF"
+                    }
                 }
             ]
         },
@@ -56,6 +77,76 @@
                         "navigationStyle": "custom",
                         "backgroundColor": "#8B5CF6"
                     }
+                },
+                {
+                    "path": "shiguangxu/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#EDE9FE"
+                    }
+                },
+                {
+                    "path": "shiguangxu/todo/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/countdown/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/habit/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/pomodoro/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/memo/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/goal/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/bill/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/diary/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "shiguangxu/stats/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
                 }
             ]
         },
@@ -69,6 +160,27 @@
                         "navigationBarTitleText": "我的",
                         "navigationStyle": "custom",
                         "backgroundColor": "#FF8FAB"
+                    }
+                },
+                {
+                    "path": "feedback/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "about/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "settings/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
                     }
                 }
             ]

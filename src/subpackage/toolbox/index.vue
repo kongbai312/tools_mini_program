@@ -1,5 +1,5 @@
 <template>
-  <view class="toolbox-page" :style="{ '--nav-h': layout.navBarHeight + 'px' }">
+  <view class="toolbox-page" :class="{ 'toolbox-page--dark': userStore.isDark }" :style="{ '--nav-h': layout.navBarHeight + 'px' }">
     <image class="page-bg" :src="toolsBg" mode="widthFix" />
 
     <view class="banner">
@@ -109,6 +109,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useToolsStore, type Tool } from '@/store/tools'
+import { useUserStore } from '@/store/user'
 import TabBar from '@/components/TabBar/index.vue'
 import { useNavBarLayout } from '@/composables/useNavBarLayout'
 import { wzryTools, dailyTools, defaultRecentTools } from './assets'
@@ -116,6 +117,7 @@ import { wzryTools, dailyTools, defaultRecentTools } from './assets'
 const toolsBg = '/static/imgs/tools_bg.png'
 const toolsRole = '/static/imgs/tools_role.png'
 const store = useToolsStore()
+const userStore = useUserStore()
 const { layout, safeRightGap } = useNavBarLayout()
 const isEditingRecent = ref(false)
 
@@ -140,14 +142,19 @@ const onRecentTap = (tool: Tool) => {
 
 const onToolTap = (tool: Tool) => {
   store.addRecentTool(tool)
-  uni.showToast({ title: tool.name, icon: 'none', duration: 800 })
+  if (tool.url) {
+    uni.navigateTo({ url: tool.url })
+    return
+  }
+  uni.showToast({ title: `${tool.name} 即将上线`, icon: 'none', duration: 800 })
 }
 </script>
 
 <style lang="scss" scoped>
 .toolbox-page {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #fff;
 }
 
@@ -365,5 +372,60 @@ const onToolTap = (tool: Tool) => {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+}
+
+/* ─── Dark Mode ─── */
+.toolbox-page--dark {
+  background: #12112A;
+
+  .page-bg {
+    opacity: 0.35;
+  }
+
+  .content-area {
+    background: transparent;
+  }
+
+  .section-block {
+    background: rgba(30, 28, 58, 0.88);
+    border: 1rpx solid #2E2C50;
+    box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.36);
+    backdrop-filter: blur(8px);
+  }
+
+  .section-header {
+    border-bottom: 1rpx solid #2A2848;
+    padding-bottom: 20rpx;
+    margin-bottom: 4rpx;
+  }
+
+  .section-title {
+    color: #E0DEFF;
+    font-weight: 700;
+  }
+
+  .action-text {
+    color: #9B8CF6;
+  }
+
+  .action-arrow {
+    color: #9B8CF6;
+  }
+
+  .tool-name {
+    color: #8888AA;
+  }
+
+  .tool-name--sm {
+    color: #8888AA;
+  }
+
+  .tool-icon-wrap {
+    box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.45);
+  }
+
+  .recent-empty-text {
+    color: #444460;
+  }
 }
 </style>

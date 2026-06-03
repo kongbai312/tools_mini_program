@@ -1,4 +1,5 @@
 import type { Tool } from '@/store/tools'
+import { SGX_HUB_PATH } from './shiguangxu/assets'
 
 export const TOOL_ICONS = {
   wzryZlcx: '/subpackage/toolbox/static/imgs/tools_wzry_zlcx.svg',
@@ -12,7 +13,7 @@ export const wzryTools: Tool[] = [
 ]
 
 export const dailyTools: Tool[] = [
-  { id: 'rc_sgx', name: '时光序', icon: TOOL_ICONS.rcSgx },
+  { id: 'rc_sgx', name: '时光序', icon: TOOL_ICONS.rcSgx, url: SGX_HUB_PATH },
 ]
 
 export const allTools: Tool[] = [...wzryTools, ...dailyTools]

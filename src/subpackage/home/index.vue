@@ -1,11 +1,15 @@
 <template>
-  <view class="home-page">
-    <!-- Weather section with gradient background -->
+  <view class="home-page" :class="{ 'home-page--dark': userStore.isDark }">
+    <image class="page-bg" :src="IMG.homeBgLong" mode="aspectFill" />
+
+    <!-- Weather section -->
     <view class="weather-section">
       <!-- 顶部安全区：状态栏 + 微信胶囊 -->
       <view class="status-placeholder" :style="{ height: layout.navBarHeight + 'px' }" />
       <view class="weather-card">
-        <image class="weather-bg-img" :src="IMG.homeBg" mode="aspectFill" />
+        <view class="weather-bg-wrap">
+          <image class="weather-bg-img" :src="IMG.homeBgLong" mode="aspectFill" />
+        </view>
         <view class="weather-header">
           <view class="location-wrap">
             <text class="local-icon">⌖</text>
@@ -44,7 +48,7 @@
     </view>
 
     <!-- Hot topics card -->
-    <view class="topics-card">
+    <view class="topics-card" :class="{ 'topics-card--menu-open': sourceOpen }">
       <view class="card-header">
         <view class="title-wrap">
           <text class="flame-icon">🔥</text>
@@ -52,7 +56,7 @@
         </view>
         <view class="source-selector">
           <view class="source-pill" @tap.stop="toggleSourceMenu">
-            <text class="source-pill-text">{{ store.sources[store.activeSource] }}</text>
+            <text class="source-pill-text">{{ sources[activeSource] }}</text>
             <view
               class="source-pill-arrow"
               :class="{ 'source-pill-arrow--open': sourceOpen }"
@@ -60,14 +64,14 @@
           </view>
           <view v-if="sourceOpen" class="source-dropdown">
             <view
-              v-for="(source, index) in store.sources"
+              v-for="(source, index) in sources"
               :key="source"
               class="source-option"
-              :class="{ 'source-option--active': store.activeSource === index }"
+              :class="{ 'source-option--active': activeSource === index }"
               @tap.stop="selectSource(index)"
             >
               <text class="source-option-text">{{ source }}</text>
-              <text v-if="store.activeSource === index" class="source-option-check">✓</text>
+              <text v-if="activeSource === index" class="source-option-check">✓</text>
             </view>
           </view>
         </view>
@@ -77,12 +81,13 @@
         scroll-y
         class="topics-scroll"
         :style="topicsScrollStyle"
+        :scroll-top="topicsScrollTop"
         :show-scrollbar="false"
       >
         <view class="topics-list" :style="topicsListStyle">
           <view
-            v-for="topic in store.currentTopics"
-            :key="topic.id"
+            v-for="topic in currentTopics"
+            :key="`${activeSource}-${topic.id}`"
             class="topic-item"
             hover-class="topic-item--hover"
             @tap="onTopicTap(topic.title)"
@@ -117,21 +122,26 @@
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useWeatherStore } from '@/store/weather'
+import { useUserStore } from '@/store/user'
 import TabBar from '@/components/TabBar/index.vue'
 import { useNavBarLayout } from '@/composables/useNavBarLayout'
 
 const IMG = {
-  homeBg: '/static/imgs/home-bg.png',
+  homeBgLong: '/static/imgs/home_bg_long.png',
   homeRole: '/static/imgs/home_role.png',
 } as const
 
 const store = useWeatherStore()
+const userStore = useUserStore()
+const { currentTopics, activeSource, sources } = storeToRefs(store)
 const weather = computed(() => store.weather)
 const { layout } = useNavBarLayout()
 const instance = getCurrentInstance()
 const sourceOpen = ref(false)
 const topicsScrollHeight = ref(0)
+const topicsScrollTop = ref(0)
 let heightTimer: ReturnType<typeof setTimeout> | null = null
 
 const topicsScrollStyle = computed(() =>
@@ -185,6 +195,10 @@ const closeSourceMenu = () => {
 const selectSource = (index: number) => {
   store.setSource(index)
   sourceOpen.value = false
+  topicsScrollTop.value = 1
+  nextTick(() => {
+    topicsScrollTop.value = 0
+  })
 }
 </script>
 
@@ -194,22 +208,33 @@ const selectSource = (index: number) => {
   flex-direction: column;
   height: 100vh;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #E5F7FF 0%, #F7FBFF 42%, #FFFFFF 100%);
+  position: relative;
+  background: #fff;
   overflow: hidden;
+}
+
+.page-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* ─── Weather Section ─── */
 .weather-section {
   flex-shrink: 0;
-  background: linear-gradient(160deg, #4AC8EE 0%, #6BCFF5 40%, #9DDFF8 70%, #C3EDFB 100%);
   padding: 0 20rpx 18rpx;
   position: relative;
+  z-index: 1;
   overflow: hidden;
 }
 
 .weather-card {
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   min-height: 378rpx;
   border-radius: 28rpx;
   border: 2rpx solid rgba(255, 255, 255, 0.62);
@@ -217,13 +242,22 @@ const selectSource = (index: number) => {
   box-shadow: 0 14rpx 38rpx rgba(29, 124, 199, 0.18);
 }
 
-.weather-bg-img {
+.weather-bg-wrap {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.42;
   border-radius: 28rpx;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.weather-bg-img {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  opacity: 0.42;
 }
 
 .status-placeholder {
@@ -381,7 +415,7 @@ const selectSource = (index: number) => {
 .character-img {
   position: absolute;
   right: 4rpx;
-  bottom: -16rpx;
+  bottom: 0;
   z-index: 2;
   width: 248rpx;
   pointer-events: none;
@@ -393,6 +427,8 @@ const selectSource = (index: number) => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
   margin: 14rpx 20rpx 0;
   background: #fff;
   border-radius: 28rpx;
@@ -400,6 +436,11 @@ const selectSource = (index: number) => {
   border: 2rpx solid rgba(223, 238, 248, 0.95);
   box-shadow: 0 12rpx 40rpx rgba(35, 55, 95, 0.08);
   overflow: hidden;
+}
+
+.topics-card--menu-open {
+  z-index: 25;
+  overflow: visible;
 }
 
 .card-header {
@@ -493,6 +534,7 @@ const selectSource = (index: number) => {
   background: #fff;
   border: 2rpx solid #FFE3EF;
   box-shadow: 0 12rpx 36rpx rgba(255, 79, 147, 0.14);
+  z-index: 2;
 }
 
 .source-option {
@@ -626,5 +668,69 @@ const selectSource = (index: number) => {
   color: #8D92AA;
   min-width: 78rpx;
   text-align: right;
+}
+
+/* ─── Dark Mode ─── */
+.home-page--dark {
+  background: #1A1A2E;
+
+  .page-bg {
+    opacity: 0.28;
+  }
+
+  .weather-card {
+    background: rgba(37, 37, 66, 0.78);
+    border-color: rgba(80, 80, 120, 0.42);
+    box-shadow: 0 14rpx 38rpx rgba(0, 0, 0, 0.32);
+  }
+
+  .weather-bg-img {
+    opacity: 0.18;
+  }
+
+  .topics-card {
+    background: #252542;
+    border-color: rgba(60, 60, 90, 0.6);
+    box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.28);
+  }
+
+  .section-title {
+    color: #E8E8F0;
+  }
+
+  .topic-title {
+    color: #D0D0E0;
+  }
+
+  .rank-num {
+    color: #666688;
+  }
+
+  .views-count {
+    color: #666688;
+  }
+
+  .topic-item {
+    border-bottom-color: #333350;
+  }
+
+  .source-pill {
+    background: #2D2D4A;
+    border-color: #4D3D58;
+  }
+
+  .source-dropdown {
+    background: #252542;
+    border-color: #3D3D60;
+    box-shadow: 0 12rpx 36rpx rgba(0, 0, 0, 0.35);
+  }
+
+  .source-option-text {
+    color: #C0C0D8;
+  }
+
+  .source-option--active {
+    background: #2A2A45;
+  }
 }
 </style>

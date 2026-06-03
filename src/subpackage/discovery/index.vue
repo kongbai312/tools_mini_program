@@ -1,13 +1,17 @@
 <template>
-  <view class="discovery-page">
-    <!-- Hero: gradient + search -->
+  <view class="discovery-page" :class="{ 'discovery-page--dark': userStore.isDark }">
+    <image class="page-bg" :src="discoverBg" mode="aspectFill" />
+    <view class="page-body">
+    <!-- Hero: search + character -->
     <view class="discovery-hero">
       <view class="status-placeholder" :style="{ height: layout.navBarHeight + 'px' }" />
       <view class="search-row">
         <view class="search-box" @tap="onSearchTap">
-          <text class="search-icon">⌕</text>
+          <view class="search-icon-wrap">
+            <text class="search-icon">⌕</text>
+          </view>
           <text class="search-placeholder">搜索文章、主题、工具...</text>
-          <view class="search-star">
+          <view class="search-star" @tap.stop="onStarTap">
             <text class="star-icon">★</text>
           </view>
         </view>
@@ -15,12 +19,19 @@
           class="discover-role"
           :src="discoverRole"
           mode="widthFix"
+          lazy-load
         />
       </view>
     </view>
 
     <!-- Hot topics -->
     <view class="categories-area">
+      <view v-if="categoryFilter" class="filter-bar">
+        <text class="filter-label">当前：{{ categoryFilter }}</text>
+        <view class="filter-clear" @tap="clearCategoryFilter">
+          <text class="filter-clear-text">× 清除</text>
+        </view>
+      </view>
       <view class="section categories-section">
       <view class="section-header">
         <text class="section-title">🔥 热门主题</text>
@@ -34,6 +45,7 @@
             v-for="cat in categories"
             :key="cat.id"
             class="category-item"
+            :class="{ 'category-item--active': categoryFilter === cat.name }"
             @tap="onCategoryTap(cat.name)"
           >
             <view class="category-icon-wrap" :style="{ background: cat.bgColor }">
@@ -41,6 +53,7 @@
                 class="category-icon-img"
                 :src="cat.icon"
                 mode="aspectFit"
+                lazy-load
               />
             </view>
             <text class="category-name">{{ cat.name }}</text>
@@ -64,64 +77,62 @@
         </view>
       </view>
 
-      <view class="articles-list">
-        <view
+      <view v-if="activeTab === 2" class="follow-empty">
+        <text class="empty-icon">☆</text>
+        <text class="empty-title">还没有关注的内容</text>
+        <text class="empty-desc">去发现页看看推荐文章吧</text>
+        <view class="empty-btn" @tap="goRecommend">
+          <text class="empty-btn-text">去看看推荐</text>
+        </view>
+      </view>
+
+      <view v-else-if="!currentArticles.length" class="list-empty">
+        <text class="list-empty-text">该主题下暂无文章</text>
+        <view class="list-empty-btn" @tap="clearCategoryFilter">
+          <text class="list-empty-btn-text">查看全部</text>
+        </view>
+      </view>
+
+      <view v-else class="articles-list">
+        <ArticleCard
           v-for="article in currentArticles"
           :key="article.id"
-          class="article-card"
-          hover-class="article-card--hover"
+          :article="article"
+          :cover="articleCover"
           @tap="onArticleTap(article)"
-        >
-          <image
-            class="article-cover"
-            :src="article.cover"
-            mode="aspectFill"
-          />
-          <view class="article-content">
-            <text class="article-title">{{ article.title }}</text>
-            <view class="article-footer">
-              <view
-                class="article-category-badge"
-                :style="{
-                  background: article.categoryColor + '14',
-                }"
-              >
-                <text class="article-category-text" :style="{ color: article.categoryColor }">
-                  {{ article.category }}
-                </text>
-              </view>
-              <view class="article-meta">
-                <text class="meta-text">{{ article.views }}阅读</text>
-                <text class="meta-time">{{ article.timeAgo }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
+        />
       </view>
     </view>
 
     <!-- Tab bar -->
     <TabBar :current="1" />
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useToolsStore } from '@/store/tools'
+import { storeToRefs } from 'pinia'
+import { useToolsStore, type Article } from '@/store/tools'
+import { useUserStore } from '@/store/user'
 import TabBar from '@/components/TabBar/index.vue'
 import { useNavBarLayout } from '@/composables/useNavBarLayout'
-import { articleCover, categoryIcons, discoverRole } from './assets'
+import ArticleCard from './components/ArticleCard.vue'
+import { articleCover, categoryIcons, discoverBg, discoverRole } from './assets'
 
 const store = useToolsStore()
+const userStore = useUserStore()
+const { activeTab, categoryFilter } = storeToRefs(store)
 const { layout } = useNavBarLayout()
 const tabs = ['推荐', '最新', '关注']
-const activeTab = computed(() => store.activeTab)
+
 const categories = computed(() =>
   store.categories.map((cat) => ({
     ...cat,
     icon: categoryIcons[cat.id] ?? '',
   })),
 )
+
 const currentArticles = computed(() =>
   store.currentArticles.map((article) => ({
     ...article,
@@ -133,35 +144,69 @@ const setTab = (i: number) => {
   store.setActiveTab(i)
 }
 
+const goRecommend = () => {
+  store.setActiveTab(0)
+}
+
 const onSearchTap = () => {
-  uni.showToast({ title: '搜索功能开发中', icon: 'none' })
+  uni.navigateTo({ url: '/subpackage/discovery/search/index' })
+}
+
+const onStarTap = () => {
+  uni.showToast({ title: '收藏功能开发中', icon: 'none' })
 }
 
 const onMoreTap = () => {
-  uni.showToast({ title: '更多主题', icon: 'none' })
+  uni.navigateTo({ url: '/subpackage/discovery/topics/index' })
 }
 
 const onCategoryTap = (name: string) => {
-  uni.showToast({ title: name, icon: 'none', duration: 800 })
+  if (name === '更多') {
+    onMoreTap()
+    return
+  }
+  if (categoryFilter.value === name) {
+    store.setCategoryFilter(null)
+  } else {
+    store.setCategoryFilter(name)
+  }
 }
 
-const onArticleTap = (article: any) => {
-  uni.showToast({ title: '文章详情', icon: 'none', duration: 800 })
+const clearCategoryFilter = () => {
+  store.setCategoryFilter(null)
+}
+
+const onArticleTap = (article: Article) => {
+  uni.navigateTo({ url: `/subpackage/discovery/article/index?id=${article.id}` })
 }
 </script>
 
 <style lang="scss" scoped>
 .discovery-page {
   min-height: 100vh;
-  background: #F5F7FA;
+  background: #F3F0FF;
   position: relative;
+}
+
+.page-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.page-body {
+  position: relative;
+  z-index: 1;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
 
 /* ─── Hero + Search ─── */
 .discovery-hero {
   position: relative;
-  z-index: 10;
-  background: linear-gradient(180deg, #DCD4FF 0%, #EAE6FF 45%, #F3F0FF 75%, #F5F7FA 100%);
   padding-bottom: 8rpx;
 }
 
@@ -188,11 +233,21 @@ const onArticleTap = (article: any) => {
   box-shadow: 0 6rpx 24rpx rgba(123, 108, 246, 0.1);
 }
 
-.search-icon {
-  font-size: 32rpx;
-  line-height: 1;
-  color: #A0A4B0;
+.search-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
+  padding-bottom: 12rpx;
+  box-sizing: border-box;
+}
+
+.search-icon {
+  font-size: 56rpx;
+  line-height: 1;
+  color: #7B6CF6;
 }
 
 .search-placeholder {
@@ -223,7 +278,28 @@ const onArticleTap = (article: any) => {
 .categories-area {
   position: relative;
   margin: 0 24rpx;
-  z-index: 12;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 16rpx 24rpx;
+  margin-bottom: 12rpx;
+  box-shadow: 0 4rpx 16rpx rgba(91, 127, 255, 0.06);
+}
+
+.filter-label {
+  font-size: 26rpx;
+  color: #5B7FFF;
+  font-weight: 500;
+}
+
+.filter-clear-text {
+  font-size: 26rpx;
+  color: #999;
 }
 
 .discover-role {
@@ -243,7 +319,6 @@ const onArticleTap = (article: any) => {
   border-radius: 32rpx;
   box-shadow: 0 4rpx 24rpx rgba(91, 127, 255, 0.06);
   position: relative;
-  z-index: 15;
 }
 
 .section {
@@ -295,6 +370,11 @@ const onArticleTap = (article: any) => {
   min-width: 0;
 }
 
+.category-item--active .category-name {
+  color: #5B7FFF;
+  font-weight: 700;
+}
+
 .category-icon-wrap {
   width: 96rpx;
   height: 96rpx;
@@ -305,6 +385,10 @@ const onArticleTap = (article: any) => {
   padding: 12rpx;
   box-sizing: border-box;
   flex-shrink: 0;
+}
+
+.category-item--active .category-icon-wrap {
+  box-shadow: 0 0 0 4rpx rgba(91, 127, 255, 0.35);
 }
 
 .category-icon-img {
@@ -321,6 +405,8 @@ const onArticleTap = (article: any) => {
 
 /* ─── Content Panel (tabs + articles) ─── */
 .content-panel {
+  position: relative;
+  z-index: 1;
   background: #fff;
   margin: 16rpx 24rpx 32rpx;
   border-radius: 32rpx;
@@ -364,85 +450,165 @@ const onArticleTap = (article: any) => {
   border-radius: 3rpx;
 }
 
+/* ─── Follow empty ─── */
+.follow-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 48rpx 96rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  color: #E0E0E0;
+  margin-bottom: 24rpx;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 12rpx;
+}
+
+.empty-desc {
+  font-size: 26rpx;
+  color: #B8BCC8;
+  margin-bottom: 40rpx;
+}
+
+.empty-btn {
+  padding: 20rpx 48rpx;
+  background: linear-gradient(135deg, #7B6CF6, #5B7FFF);
+  border-radius: 999rpx;
+}
+
+.empty-btn-text {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ─── List empty ─── */
+.list-empty {
+  padding: 64rpx 28rpx;
+  text-align: center;
+}
+
+.list-empty-text {
+  font-size: 28rpx;
+  color: #B8BCC8;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.list-empty-btn {
+  display: inline-flex;
+  padding: 16rpx 40rpx;
+  background: #F3F0FF;
+  border-radius: 999rpx;
+}
+
+.list-empty-btn-text {
+  font-size: 26rpx;
+  color: #5B7FFF;
+}
+
 /* ─── Articles ─── */
 .articles-list {
   padding: 0;
 }
 
-.article-card {
-  display: flex;
-  align-items: flex-start;
-  padding: 24rpx 28rpx;
-  gap: 24rpx;
-  border-bottom: 1rpx solid #F0F0F0;
-}
+/* ─── Dark Mode ─── */
+.discovery-page--dark {
+  background: #1A1A2E;
 
-.article-card:last-child {
-  border-bottom: none;
-}
+  .page-bg {
+    opacity: 0.50;
+  }
 
-.article-card--hover {
-  background: #FAFBFF;
-}
+  .search-box {
+    background: #2D2D4A;
+    box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.28);
+  }
 
-.article-cover {
-  width: 220rpx;
-  height: 148rpx;
-  border-radius: 20rpx;
-  flex-shrink: 0;
-  background: #EEE;
-}
+  .search-icon {
+    color: #7B6CF6;
+  }
 
-.article-content {
-  flex: 1;
-  min-width: 0;
-  height: 148rpx;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
+  .search-placeholder {
+    color: #555578;
+  }
 
-.article-title {
-  font-size: 30rpx;
-  color: #1A1A2E;
-  line-height: 1.45;
-  font-weight: 700;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+  .categories-section {
+    background: #252542;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.22);
+  }
 
-.article-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-}
+  .section-title {
+    color: #E8E8F0;
+  }
 
-.article-category-badge {
-  flex-shrink: 0;
-  padding: 6rpx 18rpx;
-  border-radius: 999rpx;
-}
+  .more-text,
+  .arrow-icon {
+    color: #666688;
+  }
 
-.article-category-text {
-  font-size: 22rpx;
-  font-weight: 500;
-  line-height: 1.2;
-}
+  .category-name {
+    color: #9090A8;
+  }
 
-.article-meta {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  flex-shrink: 0;
-}
+  .content-panel {
+    background: #252542;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.22);
+  }
 
-.meta-text,
-.meta-time {
-  font-size: 22rpx;
-  color: #B8BCC8;
-  line-height: 1.2;
+  .tabs-wrap {
+    border-bottom-color: #333350;
+  }
+
+  .tab-text {
+    color: #666688;
+  }
+
+  .tab-item--active .tab-text {
+    color: #7B6CF6;
+  }
+
+  .tab-indicator {
+    background: #7B6CF6;
+  }
+
+  .follow-empty .empty-title {
+    color: #E8E8F0;
+  }
+
+  .follow-empty .empty-desc {
+    color: #666688;
+  }
+
+  .list-empty-text {
+    color: #666688;
+  }
+
+  .list-empty-btn {
+    background: #2D2D4A;
+  }
+
+  .list-empty-btn-text {
+    color: #7B6CF6;
+  }
+
+  .filter-bar {
+    background: #252542;
+  }
+
+  .filter-label {
+    color: #7B6CF6;
+  }
+
+  .filter-clear-text {
+    color: #666688;
+  }
 }
 </style>
