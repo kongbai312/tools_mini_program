@@ -71,11 +71,13 @@ const formatValue = (v: number) => {
 }
 
 .bar-value {
-  width: 72rpx;
+  flex-shrink: 0;
+  min-width: 96rpx;
   text-align: right;
   font-size: 24rpx;
   color: #333;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .stat-empty {

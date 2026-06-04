@@ -93,13 +93,6 @@
                     }
                 },
                 {
-                    "path": "shiguangxu/countdown/index",
-                    "style": {
-                        "navigationStyle": "custom",
-                        "backgroundColor": "#F6F7FB"
-                    }
-                },
-                {
                     "path": "shiguangxu/habit/index",
                     "style": {
                         "navigationStyle": "custom",
@@ -114,28 +107,7 @@
                     }
                 },
                 {
-                    "path": "shiguangxu/memo/index",
-                    "style": {
-                        "navigationStyle": "custom",
-                        "backgroundColor": "#F6F7FB"
-                    }
-                },
-                {
                     "path": "shiguangxu/goal/index",
-                    "style": {
-                        "navigationStyle": "custom",
-                        "backgroundColor": "#F6F7FB"
-                    }
-                },
-                {
-                    "path": "shiguangxu/bill/index",
-                    "style": {
-                        "navigationStyle": "custom",
-                        "backgroundColor": "#F6F7FB"
-                    }
-                },
-                {
-                    "path": "shiguangxu/diary/index",
                     "style": {
                         "navigationStyle": "custom",
                         "backgroundColor": "#F6F7FB"

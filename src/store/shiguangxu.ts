@@ -10,8 +10,6 @@ import {
 const STORAGE_PREFIX = 'sgx_'
 
 export type TodoPriority = 'urgent_important' | 'important' | 'urgent' | 'normal'
-export type BillType = 'income' | 'expense'
-
 export interface TodoItem {
   id: string
   title: string
@@ -122,32 +120,21 @@ export interface GoalItem {
   id: string
   title: string
   steps: GoalStep[]
+  /** 目标主题色，用于卡片与进度条区分 */
+  color: string
   createdAt: number
 }
 
-export interface BillRecord {
-  id: string
-  type: BillType
-  amount: number
-  category: string
-  note: string
-  date: string
-}
+/** 目标选色板（与待办色板一致，便于区分不同目标） */
+export const GOAL_COLORS = [...TODO_EVENT_COLORS] as const
 
-export interface DiaryEntry {
-  id: string
-  title: string
-  content: string
-  mood: string
-  date: string
-  updatedAt: number
-}
-
-export interface CountdownItem {
-  id: string
-  title: string
-  targetDate: string
-  icon: string
+/** 为新建目标自动分配尚未使用的颜色 */
+export function pickNextGoalColor(existing: GoalItem[]): string {
+  const used = new Set(existing.map((g) => g.color?.trim().toUpperCase()).filter(Boolean))
+  for (const c of GOAL_COLORS) {
+    if (!used.has(c.toUpperCase())) return c
+  }
+  return GOAL_COLORS[existing.length % GOAL_COLORS.length]
 }
 
 export interface HabitItem {
@@ -155,12 +142,6 @@ export interface HabitItem {
   name: string
   icon: string
   checks: string[]
-}
-
-export interface MemoItem {
-  id: string
-  content: string
-  updatedAt: number
 }
 
 export interface StatSlice {
@@ -177,10 +158,6 @@ export const TODO_PRIORITY_LABEL: Record<TodoPriority, string> = {
 }
 
 export const TODO_CATEGORIES = ['工作', '生活', '学习'] as const
-export const BILL_EXPENSE_CATEGORIES = ['餐饮', '交通', '购物', '娱乐', '其他'] as const
-export const BILL_INCOME_CATEGORIES = ['工资', '奖金', '兼职', '其他'] as const
-export const DIARY_MOODS = ['😊', '😌', '😐', '😢', '😤', '🥳'] as const
-
 function loadJson<T>(key: string, fallback: T): T {
   try {
     const raw = uni.getStorageSync(STORAGE_PREFIX + key)
@@ -238,10 +215,16 @@ const defaultTodos: TodoItem[] = [
   },
 ]
 
+function migrateGoal(raw: GoalItem, index: number): GoalItem {
+  const color = raw.color?.trim() || GOAL_COLORS[index % GOAL_COLORS.length]
+  return { ...raw, color }
+}
+
 const defaultGoals: GoalItem[] = [
   {
     id: 'g_1',
     title: '学会 Vue3 组合式 API',
+    color: '#8B5CF6',
     steps: [
       { id: 'gs_1', title: '看完官方文档', done: true },
       { id: 'gs_2', title: '完成小项目练习', done: false },
@@ -251,58 +234,13 @@ const defaultGoals: GoalItem[] = [
   },
 ]
 
-const defaultBills: BillRecord[] = [
-  {
-    id: 'b_1',
-    type: 'expense',
-    amount: 28.5,
-    category: '餐饮',
-    note: '午餐',
-    date: todayStr(),
-  },
-  {
-    id: 'b_2',
-    type: 'income',
-    amount: 8000,
-    category: '工资',
-    note: '月薪',
-    date: todayStr(),
-  },
-]
-
-const defaultDiaries: DiaryEntry[] = [
-  {
-    id: 'd_1',
-    title: '开始记录',
-    content: '今天决定用时光序好好规划生活。',
-    mood: '😊',
-    date: todayStr(),
-    updatedAt: Date.now(),
-  },
-]
-
-const defaultCountdowns: CountdownItem[] = [
-  { id: 'cd_1', title: '新年', targetDate: '2027-01-01', icon: '🎆' },
-]
-
 const defaultHabits: HabitItem[] = [
   { id: 'h_1', name: '早起', icon: '🌅', checks: [] },
   { id: 'h_2', name: '运动', icon: '🏃', checks: [] },
 ]
 
-const defaultMemos: MemoItem[] = [
-  { id: 'm_1', content: '记录灵感，让生活更有序~', updatedAt: Date.now() },
-]
-
 export function todoDueDate(t: TodoItem): string {
   return t.dueDate || dueFromCreated(t.createdAt)
-}
-
-export function daysUntil(targetDate: string): number {
-  const target = new Date(`${targetDate}T00:00:00`)
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  return Math.ceil((target.getTime() - now.getTime()) / 86400000)
 }
 
 export function habitStreak(checks: string[]): number {
@@ -336,12 +274,8 @@ const STAT_COLORS = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC
 export const useShiguangxuStore = defineStore('shiguangxu', {
   state: () => ({
     todos: loadJson<TodoItem[]>('todos', defaultTodos).map(migrateTodo),
-    goals: loadJson<GoalItem[]>('goals', defaultGoals),
-    bills: loadJson<BillRecord[]>('bills', defaultBills),
-    diaries: loadJson<DiaryEntry[]>('diaries', defaultDiaries),
-    countdowns: loadJson<CountdownItem[]>('countdowns', defaultCountdowns),
+    goals: loadJson<GoalItem[]>('goals', defaultGoals).map(migrateGoal),
     habits: loadJson<HabitItem[]>('habits', defaultHabits),
-    memos: loadJson<MemoItem[]>('memos', defaultMemos),
     pomodoroMinutes: 25,
     pomodoroSessionsToday: loadJson<number>('pomodoro_sessions', 0),
   }),
@@ -380,31 +314,6 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
       return Math.round((this.doneTodos.length / this.todos.length) * 100)
     },
 
-    monthBillSummary(): { income: number; expense: number } {
-      const now = new Date()
-      const prefix = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}`
-      let income = 0
-      let expense = 0
-      for (const b of this.bills) {
-        if (!b.date.startsWith(prefix)) continue
-        if (b.type === 'income') income += b.amount
-        else expense += b.amount
-      }
-      return { income, expense }
-    },
-
-    billCategoryStats(): StatSlice[] {
-      const counts: Record<string, number> = {}
-      for (const b of this.bills.filter((x) => x.type === 'expense')) {
-        counts[b.category] = (counts[b.category] || 0) + b.amount
-      }
-      return Object.entries(counts).map(([label, value], i) => ({
-        label,
-        value: Math.round(value * 100) / 100,
-        color: STAT_COLORS[i % STAT_COLORS.length],
-      }))
-    },
-
     habitWeekChecks(): number {
       const start = startOfWeek(todayStr())
       const end = endOfWeek(todayStr())
@@ -425,20 +334,8 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
     persistGoals() {
       saveJson('goals', this.goals)
     },
-    persistBills() {
-      saveJson('bills', this.bills)
-    },
-    persistDiaries() {
-      saveJson('diaries', this.diaries)
-    },
-    persistCountdowns() {
-      saveJson('countdowns', this.countdowns)
-    },
     persistHabits() {
       saveJson('habits', this.habits)
-    },
-    persistMemos() {
-      saveJson('memos', this.memos)
     },
     persistPomodoroSessions() {
       saveJson('pomodoro_sessions', this.pomodoroSessionsToday)
@@ -523,13 +420,19 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
       this.persistTodos()
     },
 
-    addGoal(title: string) {
+    addGoal(title: string, color: string, stepTitles: string[] = []) {
       const text = title.trim()
       if (!text) return false
+      const theme = color.trim() || pickNextGoalColor(this.goals)
+      const steps = stepTitles
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((t) => ({ id: uid(), title: t, done: false }))
       this.goals.unshift({
         id: uid(),
         title: text,
-        steps: [],
+        color: theme,
+        steps,
         createdAt: Date.now(),
       })
       this.persistGoals()
@@ -558,73 +461,6 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
       this.persistGoals()
     },
 
-    addBill(type: BillType, amount: number, category: string, note: string, date: string) {
-      if (amount <= 0 || !date) return false
-      this.bills.unshift({
-        id: uid(),
-        type,
-        amount: Math.round(amount * 100) / 100,
-        category,
-        note: note.trim(),
-        date,
-      })
-      this.persistBills()
-      return true
-    },
-
-    removeBill(id: string) {
-      this.bills = this.bills.filter((b) => b.id !== id)
-      this.persistBills()
-    },
-
-    addDiary(title: string, content: string, mood: string, date: string) {
-      const t = title.trim()
-      const c = content.trim()
-      if (!t || !c) return false
-      this.diaries.unshift({
-        id: uid(),
-        title: t,
-        content: c,
-        mood: mood || '😊',
-        date: date || todayStr(),
-        updatedAt: Date.now(),
-      })
-      this.persistDiaries()
-      return true
-    },
-
-    updateDiary(id: string, title: string, content: string, mood: string) {
-      const item = this.diaries.find((d) => d.id === id)
-      if (!item) return false
-      const t = title.trim()
-      const c = content.trim()
-      if (!t || !c) return false
-      item.title = t
-      item.content = c
-      item.mood = mood
-      item.updatedAt = Date.now()
-      this.persistDiaries()
-      return true
-    },
-
-    removeDiary(id: string) {
-      this.diaries = this.diaries.filter((d) => d.id !== id)
-      this.persistDiaries()
-    },
-
-    addCountdown(title: string, targetDate: string, icon = '📅') {
-      const text = title.trim()
-      if (!text || !targetDate) return false
-      this.countdowns.unshift({ id: uid(), title: text, targetDate, icon })
-      this.persistCountdowns()
-      return true
-    },
-
-    removeCountdown(id: string) {
-      this.countdowns = this.countdowns.filter((c) => c.id !== id)
-      this.persistCountdowns()
-    },
-
     addHabit(name: string, icon = '⭐') {
       const text = name.trim()
       if (!text) return false
@@ -651,30 +487,6 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
     removeHabit(id: string) {
       this.habits = this.habits.filter((h) => h.id !== id)
       this.persistHabits()
-    },
-
-    addMemo(content: string) {
-      const text = content.trim()
-      if (!text) return false
-      this.memos.unshift({ id: uid(), content: text, updatedAt: Date.now() })
-      this.persistMemos()
-      return true
-    },
-
-    updateMemo(id: string, content: string) {
-      const item = this.memos.find((m) => m.id === id)
-      if (!item) return false
-      const text = content.trim()
-      if (!text) return false
-      item.content = text
-      item.updatedAt = Date.now()
-      this.persistMemos()
-      return true
-    },
-
-    removeMemo(id: string) {
-      this.memos = this.memos.filter((m) => m.id !== id)
-      this.persistMemos()
     },
 
     recordPomodoroSession() {

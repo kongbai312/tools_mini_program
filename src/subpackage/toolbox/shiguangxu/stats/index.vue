@@ -1,6 +1,6 @@
 <template>
   <view class="sgx-page" :class="{ 'sgx-page--dark': userStore.isDark }">
-    <PageHeader title="时间统计" />
+    <PageHeader title="统计" />
 
     <scroll-view class="page-scroll" scroll-y>
       <view class="stat-card">
@@ -16,11 +16,6 @@
         <StatBars :slices="store.todoCategoryStats" />
       </view>
 
-      <view class="stat-card">
-        <text class="stat-card-title">支出分类（金额）</text>
-        <StatBars :slices="store.billCategoryStats" value-suffix="元" />
-      </view>
-
       <view class="stat-card stat-card--row">
         <view class="mini-stat">
           <text class="mini-label">本周习惯打卡</text>
@@ -32,31 +27,12 @@
         </view>
       </view>
 
-      <view class="stat-card">
-        <text class="stat-card-title">本月收支</text>
-        <view class="bill-summary">
-          <view class="bill-sum-row">
-            <text class="bill-sum-label">收入</text>
-            <text class="bill-sum-in">¥{{ monthBill.income.toFixed(2) }}</text>
-          </view>
-          <view class="bill-sum-row">
-            <text class="bill-sum-label">支出</text>
-            <text class="bill-sum-out">¥{{ monthBill.expense.toFixed(2) }}</text>
-          </view>
-          <view class="bill-sum-row bill-sum-row--balance">
-            <text class="bill-sum-label">结余</text>
-            <text class="bill-sum-balance">¥{{ balance.toFixed(2) }}</text>
-          </view>
-        </view>
-      </view>
-
       <view style="height: 48rpx;" />
     </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useShiguangxuStore } from '@/store/shiguangxu'
 import PageHeader from '../components/PageHeader.vue'
@@ -64,8 +40,6 @@ import StatBars from '../components/StatBars.vue'
 
 const userStore = useUserStore()
 const store = useShiguangxuStore()
-const monthBill = computed(() => store.monthBillSummary)
-const balance = computed(() => monthBill.value.income - monthBill.value.expense)
 </script>
 
 <style lang="scss" scoped>
@@ -130,46 +104,6 @@ const balance = computed(() => monthBill.value.income - monthBill.value.expense)
   font-size: 36rpx;
   font-weight: 800;
   color: #7c3aed;
-}
-
-.bill-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.bill-sum-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.bill-sum-label {
-  font-size: 28rpx;
-  color: #666;
-}
-
-.bill-sum-in {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #10b981;
-}
-
-.bill-sum-out {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #ef4444;
-}
-
-.bill-sum-balance {
-  font-size: 36rpx;
-  font-weight: 800;
-  color: #8b5cf6;
-}
-
-.bill-sum-row--balance {
-  padding-top: 16rpx;
-  border-top: 1rpx solid #f0f0f5;
 }
 
 .sgx-page--dark .stat-card,

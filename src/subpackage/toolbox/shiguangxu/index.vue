@@ -18,7 +18,8 @@
           @tap="openModule(mod.path)"
         >
           <view class="module-icon" :style="{ background: mod.bgColor }">
-            <text class="module-emoji">{{ mod.emoji }}</text>
+            <image v-if="mod.icon" class="module-icon-img" :src="mod.icon" mode="aspectFit" />
+            <text v-else class="module-emoji">{{ mod.emoji }}</text>
           </view>
           <text class="module-name">{{ mod.name }}</text>
           <text class="module-desc">{{ mod.desc }}</text>
@@ -36,7 +37,8 @@
           @tap="openModule(mod.path)"
         >
           <view class="module-icon" :style="{ background: mod.bgColor }">
-            <text class="module-emoji">{{ mod.emoji }}</text>
+            <image v-if="mod.icon" class="module-icon-img" :src="mod.icon" mode="aspectFit" />
+            <text v-else class="module-emoji">{{ mod.emoji }}</text>
           </view>
           <text class="module-name">{{ mod.name }}</text>
           <text class="module-desc">{{ mod.desc }}</text>
@@ -146,6 +148,12 @@ const openModule = (path: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.module-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+  opacity: 0.92;
 }
 
 .module-emoji {

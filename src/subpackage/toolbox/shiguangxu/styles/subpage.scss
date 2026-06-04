@@ -17,63 +17,6 @@
   box-sizing: border-box;
 }
 
-.cd-card {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 28rpx 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 8rpx 24rpx rgba(139, 92, 246, 0.1);
-}
-
-.cd-emoji {
-  font-size: 48rpx;
-}
-
-.cd-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.cd-title {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1a1a2e;
-}
-
-.cd-date {
-  font-size: 24rpx;
-  color: #999;
-  margin-top: 6rpx;
-}
-
-.cd-days-wrap {
-  text-align: center;
-  padding: 0 12rpx;
-}
-
-.cd-days-num {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 800;
-  color: #8b5cf6;
-  line-height: 1.1;
-}
-
-.cd-days-unit {
-  font-size: 22rpx;
-  color: #a855f7;
-}
-
-.cd-del {
-  font-size: 40rpx;
-  color: #ddd;
-  padding: 0 8rpx;
-}
-
 .empty-block {
   padding: 100rpx 0;
   text-align: center;
@@ -175,13 +118,11 @@
 .sgx-page--dark {
   background: #12112a;
 
-  .cd-card,
   .add-panel {
     background: rgba(30, 28, 58, 0.95);
     border: 1rpx solid #2e2c50;
   }
 
-  .cd-title,
   .add-title {
     color: #e0deff;
   }

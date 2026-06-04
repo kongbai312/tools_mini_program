@@ -256,28 +256,26 @@
           </view>
         </view>
         <text class="add-label">背景颜色</text>
-        <view class="color-row">
+        <view class="color-mode-row">
           <view
-            class="color-swatch color-swatch--auto"
-            :class="{ 'color-swatch--active': !newColor }"
-            @tap="newColor = ''"
+            class="color-mode-chip"
+            :class="{ 'color-mode-chip--active': colorMode === 'default' }"
+            @tap="colorMode = 'default'"
           >
-            <text class="color-swatch-auto-text">默认</text>
+            <text class="color-mode-chip-text">默认</text>
           </view>
           <view
-            v-for="c in todoColorOptions"
-            :key="c"
-            class="color-swatch"
-            :class="{ 'color-swatch--active': newColor === c }"
-            :style="{ background: c }"
-            @tap="newColor = c"
-          />
+            class="color-mode-chip"
+            :class="{ 'color-mode-chip--active': colorMode === 'custom' }"
+            @tap="colorMode = 'custom'"
+          >
+            <text class="color-mode-chip-text">自定义</text>
+          </view>
         </view>
-        <text v-if="!newColor" class="color-hint">未选择时将自动分配，与同日期时刻的其他待办区分</text>
-        <view v-else class="color-preview">
-          <view class="color-preview-bar" :style="{ background: newColor }" />
-          <text class="color-preview-text">已选颜色</text>
-        </view>
+        <text v-if="colorMode === 'default'" class="color-hint">
+          自动分配颜色，与同日期时刻的其他待办区分
+        </text>
+        <RgbColorPicker v-else v-model="newColorCustom" />
         <text class="add-label">重要紧急程度</text>
         <view class="chip-row chip-row--wrap">
           <view
@@ -306,7 +304,6 @@ import {
   useShiguangxuStore,
   TODO_CATEGORIES,
   TODO_PRIORITY_LABEL,
-  TODO_EVENT_COLORS,
   resolveTodoDisplayColor,
   type TodoPriority,
   type TodoItem,
@@ -323,8 +320,9 @@ import {
   parseHour,
 } from '@/utils/sgxDate'
 import PageHeader from '../components/PageHeader.vue'
+import RgbColorPicker from '../components/RgbColorPicker.vue'
 
-const todoColorOptions = [...TODO_EVENT_COLORS]
+type TodoColorMode = 'default' | 'custom'
 const WEEK_COL_WIDTH = 88
 
 const userStore = useUserStore()
@@ -356,7 +354,8 @@ const newCategory = ref<string>(TODO_CATEGORIES[0])
 const newPriority = ref<TodoPriority>('important')
 const newDueDate = ref(today)
 const newDueTime = ref('09:00')
-const newColor = ref('')
+const colorMode = ref<TodoColorMode>('default')
+const newColorCustom = ref('#8B5CF6')
 
 const todoColor = (item: TodoItem) => resolveTodoDisplayColor(item, store.todos)
 
@@ -367,7 +366,8 @@ const resetForm = () => {
   newPriority.value = 'important'
   newDueDate.value = today
   newDueTime.value = '09:00'
-  newColor.value = ''
+  colorMode.value = 'default'
+  newColorCustom.value = '#8B5CF6'
 }
 
 const openAdd = () => {
@@ -383,7 +383,13 @@ const openEdit = (item: TodoItem) => {
   newPriority.value = item.priority
   newDueDate.value = item.dueDate
   newDueTime.value = item.dueTime || ''
-  newColor.value = item.color || ''
+  if (item.color?.trim()) {
+    colorMode.value = 'custom'
+    newColorCustom.value = item.color
+  } else {
+    colorMode.value = 'default'
+    newColorCustom.value = '#8B5CF6'
+  }
   showAdd.value = true
 }
 
@@ -529,7 +535,7 @@ const onTimeChange = (e: { detail: { value: string } }) => {
 
 const submitForm = () => {
   const time = newDueTime.value === '全天' ? '' : newDueTime.value
-  const color = newColor.value.trim()
+  const color = colorMode.value === 'custom' ? newColorCustom.value.trim() : ''
   const isEdit = !!editingId.value
   const ok = isEdit
     ? store.updateTodo(
@@ -1284,43 +1290,37 @@ const submitForm = () => {
   display: block;
 }
 
-.color-row {
+.color-mode-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 16rpx;
   margin-bottom: 12rpx;
-  align-items: center;
 }
 
-.color-swatch {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 50%;
-  border: 4rpx solid transparent;
-  box-sizing: border-box;
-  flex-shrink: 0;
-}
-
-.color-swatch--auto {
-  width: auto;
-  height: 48rpx;
-  padding: 0 20rpx;
-  border-radius: 999rpx;
+.color-mode-chip {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 16rpx;
   background: #f3f4f6;
-  border-color: #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2rpx solid transparent;
+  box-sizing: border-box;
 }
 
-.color-swatch-auto-text {
-  font-size: 24rpx;
+.color-mode-chip--active {
+  background: #f5f3ff;
+  border-color: #8b5cf6;
+}
+
+.color-mode-chip-text {
+  font-size: 28rpx;
   color: #6b7280;
 }
 
-.color-swatch--active {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 2rpx rgba(139, 92, 246, 0.25);
+.color-mode-chip--active .color-mode-chip-text {
+  color: #7c3aed;
+  font-weight: 600;
 }
 
 .color-hint {
@@ -1329,24 +1329,6 @@ const submitForm = () => {
   line-height: 1.5;
   margin-bottom: 20rpx;
   display: block;
-}
-
-.color-preview {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-bottom: 20rpx;
-}
-
-.color-preview-bar {
-  width: 48rpx;
-  height: 28rpx;
-  border-radius: 8rpx;
-}
-
-.color-preview-text {
-  font-size: 24rpx;
-  color: #6b7280;
 }
 
 .chip-row {
