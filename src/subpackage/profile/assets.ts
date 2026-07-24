@@ -10,6 +10,7 @@ export const PROFILE_ICONS = {
   clearCache: '/subpackage/profile/static/imgs/qingchuhuancun.svg',
   setting: '/subpackage/profile/static/imgs/shezhi.svg',
   about: '/subpackage/profile/static/imgs/guanyu.svg',
+  cloud: '/subpackage/profile/static/imgs/my-cloud.svg',
   none: '/subpackage/profile/static/imgs/zanwu.svg',
 } as const
 

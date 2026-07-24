@@ -5,7 +5,7 @@
       v-for="(item, index) in tabList"
       :key="item.text"
       class="tabbar-item"
-      :class="{ 'tabbar-item--active': current === index }"
+      :class="{ 'tabbar-item--active': current === index, 'tabbar-item--disabled': !item.open }"
       @tap="onTabChange(index)"
     >
       <image
@@ -21,15 +21,40 @@
 
 <script setup lang="ts">
 import { useUserStore } from '@/store/user'
+import { TABBAR_DEVELOPING_URL, TABBAR_OPEN_CONFIG, type TabKey } from '@/config/tabbar'
 
 const props = defineProps<{ current: number }>()
 const userStore = useUserStore()
 
-const tabList = [
-  { icon: '/static/tabs/home-inactive.svg', activeIcon: '/static/tabs/home-active.svg', text: '首页' },
-  { icon: '/static/tabs/discover-inactive.svg', activeIcon: '/static/tabs/discover-active.svg', text: '发现' },
-  { icon: '/static/tabs/tools-inactive.svg', activeIcon: '/static/tabs/tools-active.svg', text: '工具' },
-  { icon: '/static/tabs/my-inactive.svg', activeIcon: '/static/tabs/my-active.svg', text: '我的' },
+const tabList: { key: TabKey; icon: string; activeIcon: string; text: string; open: boolean }[] = [
+  {
+    key: 'home',
+    icon: '/static/tabs/home-inactive.svg',
+    activeIcon: '/static/tabs/home-active.svg',
+    text: '首页',
+    open: TABBAR_OPEN_CONFIG.home,
+  },
+  {
+    key: 'discovery',
+    icon: '/static/tabs/discover-inactive.svg',
+    activeIcon: '/static/tabs/discover-active.svg',
+    text: '发现',
+    open: TABBAR_OPEN_CONFIG.discovery,
+  },
+  {
+    key: 'toolbox',
+    icon: '/static/tabs/tools-inactive.svg',
+    activeIcon: '/static/tabs/tools-active.svg',
+    text: '工具',
+    open: TABBAR_OPEN_CONFIG.toolbox,
+  },
+  {
+    key: 'profile',
+    icon: '/static/tabs/my-inactive.svg',
+    activeIcon: '/static/tabs/my-active.svg',
+    text: '我的',
+    open: TABBAR_OPEN_CONFIG.profile,
+  },
 ]
 
 const pageUrls = [
@@ -41,6 +66,11 @@ const pageUrls = [
 
 const onTabChange = (index: number) => {
   if (index === props.current) return
+  const target = tabList[index]
+  if (!target.open) {
+    uni.reLaunch({ url: `${TABBAR_DEVELOPING_URL}?tab=${target.key}` })
+    return
+  }
   uni.reLaunch({ url: pageUrls[index] })
 }
 </script>
@@ -84,6 +114,10 @@ const onTabChange = (index: number) => {
 
 .tabbar-item--active {
   color: #ED4C9A;
+}
+
+.tabbar-item--disabled {
+  opacity: 0.56;
 }
 
 .tabbar-icon-img {

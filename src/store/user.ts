@@ -15,6 +15,7 @@ interface ProfilePersist {
   avatar: string
   nickname: string
   gender: Gender
+  isLoggedIn: boolean
 }
 
 const THEME_BG = {
@@ -90,6 +91,7 @@ function loadProfile(): ProfilePersist {
     avatar: DEFAULT_AVATAR,
     nickname: DEFAULT_NICKNAME,
     gender: 'female',
+    isLoggedIn: false,
   }
   try {
     const raw = uni.getStorageSync(PROFILE_STORAGE_KEY)
@@ -103,6 +105,7 @@ function loadProfile(): ProfilePersist {
         parsed.gender === 'male' || parsed.gender === 'female'
           ? parsed.gender
           : defaults.gender,
+      isLoggedIn: parsed.isLoggedIn === true,
     }
   } catch {
     return defaults
@@ -127,11 +130,12 @@ export const useUserStore = defineStore('user', {
       avatar: profile.avatar,
       nickname: profile.nickname,
       gender: profile.gender,
+      isLoggedIn: profile.isLoggedIn,
       level: 18,
       exp: 2360,
       maxExp: 4500,
       isMember: true,
-      memberExpiry: '2025-06-01',
+      memberExpiry: '2030-06-01',
       checkInDays: checkIn.checkInDays,
       daysToReward: checkIn.daysToReward,
       rewardPoints: 100,
@@ -172,6 +176,7 @@ export const useUserStore = defineStore('user', {
         avatar: this.avatar,
         nickname: this.nickname,
         gender: this.gender,
+        isLoggedIn: this.isLoggedIn,
       })
     },
     setAvatar(path: string) {
@@ -200,6 +205,22 @@ export const useUserStore = defineStore('user', {
       this.gender = gender
       this.persistProfile()
     },
+    syncWechatProfile(profile: { avatar: string; nickname: string; gender?: Gender }) {
+      this.avatar = profile.avatar || this.avatar
+      this.nickname = profile.nickname.trim().slice(0, NICKNAME_MAX_LEN) || this.nickname
+      if (profile.gender === 'male' || profile.gender === 'female') {
+        this.gender = profile.gender
+      }
+      this.isLoggedIn = true
+      this.persistProfile()
+    },
+    logoutWechatProfile() {
+      this.avatar = DEFAULT_AVATAR
+      this.nickname = DEFAULT_NICKNAME
+      this.gender = 'female'
+      this.isLoggedIn = false
+      this.persistProfile()
+    },
     clearCache() {
       try {
         const keepTheme = this.theme
@@ -207,6 +228,7 @@ export const useUserStore = defineStore('user', {
           avatar: this.avatar,
           nickname: this.nickname,
           gender: this.gender,
+          isLoggedIn: this.isLoggedIn,
         }
         uni.clearStorageSync()
         uni.setStorageSync(THEME_STORAGE_KEY, keepTheme)

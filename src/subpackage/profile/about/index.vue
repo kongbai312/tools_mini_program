@@ -12,7 +12,7 @@
 
     <view class="about-card app-card">
       <image class="app-logo" src="/static/imgs/icon2.png" mode="aspectFit" />
-      <text class="app-name">次元百宝箱</text>
+      <text class="app-name">工具箱</text>
       <text class="app-version">版本 v{{ appVersion }}</text>
       <text class="app-desc">一个轻量好用的日常工具与内容聚合小程序。</text>
     </view>

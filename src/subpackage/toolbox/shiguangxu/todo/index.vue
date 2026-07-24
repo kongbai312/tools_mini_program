@@ -95,7 +95,7 @@
           <text class="hour-label">{{ formatHourLabel(h) }}</text>
           <view class="hour-content">
             <view
-              v-for="item in todosAtHour(dayTodos, h)"
+              v-for="item in dayBucket.hourBuckets[h] ?? []"
               :key="item.id"
               class="event-bar"
               :class="{ 'event-bar--done': item.done }"
@@ -149,7 +149,7 @@
               <text class="week-gutter-text">{{ formatHourLabel(h) }}</text>
               <view v-for="day in weekDays" :key="`${day.date}-${h}`" class="week-mini-cell">
                 <view
-                  v-for="item in todosAtHour(day.todos, h)"
+                  v-for="item in day.hourBuckets[h] ?? []"
                   :key="item.id"
                   class="week-mini-event week-mini-event--timed"
                   :class="{ 'week-mini-event--done': item.done }"
@@ -299,12 +299,14 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 import {
   useShiguangxuStore,
   TODO_CATEGORIES,
   TODO_PRIORITY_LABEL,
   resolveTodoDisplayColor,
+  todoDueDate,
   type TodoPriority,
   type TodoItem,
 } from '@/store/shiguangxu'
@@ -330,6 +332,10 @@ const store = useShiguangxuStore()
 const today = todayStr()
 const weekLabels = weekDayLabels()
 const hourSlots = HOUR_SLOTS
+
+onShow(() => {
+  void store.syncTodosFromCloud()
+})
 
 const viewTabs = [
   { id: 'list', label: '列表' },
@@ -357,7 +363,68 @@ const newDueTime = ref('09:00')
 const colorMode = ref<TodoColorMode>('default')
 const newColorCustom = ref('#8B5CF6')
 
+type DayBucket = {
+  todos: TodoItem[]
+  allDay: TodoItem[]
+  hourBuckets: Record<number, TodoItem[]>
+}
+
+const EMPTY_DAY_BUCKET: DayBucket = {
+  todos: [],
+  allDay: [],
+  hourBuckets: {},
+}
+
 const todoColor = (item: TodoItem) => resolveTodoDisplayColor(item, store.todos)
+
+function compareTodos(a: TodoItem, b: TodoItem) {
+  if (!a.dueTime && b.dueTime) return -1
+  if (a.dueTime && !b.dueTime) return 1
+  const timeCmp = (a.dueTime || '').localeCompare(b.dueTime || '')
+  if (timeCmp !== 0) return timeCmp
+  return a.createdAt - b.createdAt || a.id.localeCompare(b.id)
+}
+
+function buildTodosByDate(todos: TodoItem[]) {
+  const map = new Map<string, DayBucket>()
+
+  for (const todo of todos) {
+    const date = todoDueDate(todo)
+    let bucket = map.get(date)
+    if (!bucket) {
+      bucket = { todos: [], allDay: [], hourBuckets: {} }
+      map.set(date, bucket)
+    }
+
+    bucket.todos.push(todo)
+    if (!todo.dueTime) {
+      bucket.allDay.push(todo)
+      continue
+    }
+
+    const hour = parseHour(todo.dueTime)
+    if (Number.isNaN(hour)) {
+      bucket.allDay.push(todo)
+      continue
+    }
+
+    const list = bucket.hourBuckets[hour] ?? (bucket.hourBuckets[hour] = [])
+    list.push(todo)
+  }
+
+  for (const bucket of map.values()) {
+    bucket.todos.sort(compareTodos)
+    bucket.allDay.sort(compareTodos)
+    for (const key of Object.keys(bucket.hourBuckets)) {
+      bucket.hourBuckets[Number(key)].sort(compareTodos)
+    }
+  }
+
+  return map
+}
+
+const todosByDate = computed(() => buildTodosByDate(store.todos))
+const dayBucket = computed(() => todosByDate.value.get(selectedDate.value) ?? EMPTY_DAY_BUCKET)
 
 const resetForm = () => {
   editingId.value = null
@@ -420,8 +487,8 @@ const quadrants: { priority: TodoPriority; label: string; color: string }[] = [
   { priority: 'normal', label: '不重要不紧急', color: '#94A3B8' },
 ]
 
-const dayTodos = computed(() => store.todosOnDate(selectedDate.value))
-const dayAllDayTodos = computed(() => dayTodos.value.filter((t) => !t.dueTime))
+const dayTodos = computed(() => dayBucket.value.todos)
+const dayAllDayTodos = computed(() => dayBucket.value.allDay)
 const dayTitle = computed(() => {
   const d = selectedDate.value
   if (d === today) return `今天 · ${d.replace(/-/g, '.')}`
@@ -457,14 +524,15 @@ const weekDays = computed(() => {
   const wd = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
   return wd.map((weekLabel, i) => {
     const date = addDays(weekStart.value, i)
-    const todos = store.todosOnDate(date)
+    const bucket = todosByDate.value.get(date) ?? EMPTY_DAY_BUCKET
     return {
       weekLabel,
       date,
       dayNum: parseInt(date.slice(8), 10),
       isToday: date === today,
-      todos,
-      allDay: todos.filter((t) => !t.dueTime),
+      todos: bucket.todos,
+      allDay: bucket.allDay,
+      hourBuckets: bucket.hourBuckets,
     }
   })
 })
@@ -473,12 +541,9 @@ const monthCells = computed(() => {
   const grid = buildMonthGrid(calYear.value, calMonth.value)
   return grid.map((cell) => ({
     ...cell,
-    todos: store.todosOnDate(cell.date),
+    todos: todosByDate.value.get(cell.date)?.todos ?? EMPTY_DAY_BUCKET.todos,
   }))
 })
-
-const todosAtHour = (list: TodoItem[], hour: number) =>
-  list.filter((t) => t.dueTime && parseHour(t.dueTime) === hour)
 
 const shiftDay = (delta: number) => {
   selectedDate.value = addDays(selectedDate.value, delta)

@@ -91,6 +91,12 @@ const g = ref(92)
 const b = ref(246)
 const hexInput = ref('8B5CF6')
 
+type InputEventWithDetail = Event & {
+  detail?: {
+    value?: string
+  }
+}
+
 const displayHex = computed(() => rgbToHex(r.value, g.value, b.value))
 
 function syncFromHex(hex: string) {
@@ -118,8 +124,9 @@ function onChannel(
   emitColor()
 }
 
-function onHexInput(e: { detail: { value: string } }) {
-  const raw = e.detail.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
+function onHexInput(e: Event) {
+  const value = (e as InputEventWithDetail).detail?.value ?? ''
+  const raw = value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
   hexInput.value = raw.toUpperCase()
   if (raw.length === 6) {
     syncFromHex(`#${raw}`)

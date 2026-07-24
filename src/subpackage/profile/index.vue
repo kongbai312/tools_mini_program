@@ -9,16 +9,21 @@
     <view class="header-section">
       <view class="status-placeholder" :style="{ height: layout.navBarHeight + 'px' }" />
 
-      <view class="user-info">
-        <view class="avatar-wrap">
-          <image class="avatar" :src="store.avatar" mode="aspectFill" />
+      <view class="user-info" :class="{ 'user-info--guest': !store.isLoggedIn }">
+        <view class="avatar-wrap" :class="{ 'avatar-wrap--guest': !store.isLoggedIn }">
+          <image class="avatar" :class="{ 'avatar--guest': !store.isLoggedIn }" :src="profileAvatar" mode="aspectFill" />
         </view>
         <view class="user-detail">
           <view class="nickname-row">
-            <text class="nickname">{{ store.nickname }}</text>
-            <image class="gender-icon" :src="genderIcon" mode="aspectFit" />
+            <text class="nickname" :class="{ 'nickname--guest': !store.isLoggedIn }">{{ profileName }}</text>
+            <image v-if="store.isLoggedIn" class="gender-icon" :src="genderIcon" mode="aspectFit" />
+            <view v-else class="guest-login-pill" @tap="onWechatLogin">
+              <text class="guest-login-dot">●</text>
+              <text class="guest-login-text">微信登录</text>
+            </view>
           </view>
-          <view class="stats-row">
+          <text v-if="!store.isLoggedIn" class="guest-desc">登录后同步微信昵称和头像</text>
+          <view v-if="store.isLoggedIn" class="stats-row">
             <view class="level-badge" :style="{ background: levelTheme.color }">
               <text class="level-text">Lv.{{ store.level }}</text>
             </view>
@@ -111,7 +116,7 @@
             </view>
           </view>
         </view>
-        <image class="role-img" :src="store.avatar" mode="widthFix" />
+        <image class="role-img" :src="IMG.myRole" mode="widthFix" />
       </view>
     </view>
 
@@ -129,6 +134,7 @@ import { PROFILE_ICONS, getLevelTierColor } from './assets'
 const IMG = {
   myBg: '/static/imgs/my_bg.png',
   myRole: '/static/imgs/my_role.png',
+  guestAvatar: '/subpackage/profile/static/imgs/profile-guest-avatar.svg.svg',
 } as const
 
 const store = useUserStore()
@@ -138,14 +144,23 @@ const genderIcon = computed(() =>
   store.gender === 'male' ? PROFILE_ICONS.boy : PROFILE_ICONS.girl,
 )
 
+const profileAvatar = computed(() => (store.isLoggedIn ? store.avatar : IMG.guestAvatar))
+const profileName = computed(() => (store.isLoggedIn ? store.nickname : '未登录'))
+
 const levelTheme = computed(() => ({
   color: getLevelTierColor(store.level),
 }))
 
+type WechatUserInfo = {
+  nickName?: string
+  avatarUrl?: string
+  gender?: number
+}
+
 const menuItems = computed(() => [
   { id: 1, icon: PROFILE_ICONS.feedback, label: '反馈', iconBg: '#EEF2FF', action: 'feedback' as const },
   { id: 2, icon: PROFILE_ICONS.none, label: '暂无功能', iconBg: '#FFF3E0' },
-  { id: 3, icon: PROFILE_ICONS.none, label: '暂无功能', iconBg: '#F3F4F6' },
+  { id: 3, icon: PROFILE_ICONS.cloud, label: '同步功能', iconBg: '#F3F4F6', action: 'sync' as const },
   {
     id: 4,
     icon: PROFILE_ICONS.clearCache,
@@ -170,8 +185,49 @@ const onCheckIn = () => {
   }
 }
 
+const onWechatLogin = () => {
+  const getUserProfile = (
+    uni as unknown as {
+      getUserProfile?: (options: {
+        desc: string
+        lang?: string
+        success: (res: { userInfo?: WechatUserInfo }) => void
+        fail: () => void
+      }) => void
+    }
+  ).getUserProfile
+
+  if (!getUserProfile) {
+    uni.showToast({ title: '请在微信小程序中登录', icon: 'none' })
+    return
+  }
+
+  getUserProfile({
+    desc: '用于展示微信昵称和头像',
+    lang: 'zh_CN',
+    success: (res) => {
+      const info = res.userInfo ?? {}
+      const nickname = (info.nickName ?? '').trim()
+      const avatar = info.avatarUrl ?? ''
+      if (!nickname || !avatar) {
+        uni.showToast({ title: '未获取到微信资料', icon: 'none' })
+        return
+      }
+      store.syncWechatProfile({
+        avatar,
+        nickname,
+        gender: info.gender === 1 ? 'male' : info.gender === 2 ? 'female' : undefined,
+      })
+      uni.showToast({ title: '登录成功', icon: 'success' })
+    },
+    fail: () => {
+      uni.showToast({ title: '已取消登录', icon: 'none' })
+    },
+  })
+}
+
 const onMenuItemTap = (
-  item: { label: string; action?: 'clearCache' | 'feedback' | 'about' | 'settings' },
+  item: { label: string; action?: 'clearCache' | 'feedback' | 'about' | 'settings' | 'sync' },
 ) => {
   if (item.action === 'clearCache') {
     store.clearCache()
@@ -187,6 +243,10 @@ const onMenuItemTap = (
   }
   if (item.action === 'settings') {
     uni.navigateTo({ url: '/subpackage/profile/settings/index' })
+    return
+  }
+  if (item.action === 'sync') {
+    uni.navigateTo({ url: '/subpackage/profile/sync/index' })
     return
   }
   uni.showToast({ title: item.label, icon: 'none', duration: 800 })
@@ -227,6 +287,10 @@ const onMenuItemTap = (
   padding: 12rpx 30rpx 0;
 }
 
+.user-info--guest {
+  align-items: flex-start;
+}
+
 .avatar-wrap {
   width: 120rpx;
   height: 120rpx;
@@ -238,11 +302,21 @@ const onMenuItemTap = (
   box-shadow: 0 6rpx 20rpx rgba(255, 107, 149, 0.28);
 }
 
+.avatar-wrap--guest {
+  background: rgba(255, 255, 255, 0.72);
+  border-style: dashed;
+  box-shadow: 0 6rpx 18rpx rgba(124, 92, 219, 0.16);
+}
+
 .avatar {
   width: 100%;
   height: 100%;
   transform: scale(1.35);
   transform-origin: center 20%;
+}
+
+.avatar--guest {
+  transform: none;
 }
 
 .user-detail {
@@ -267,10 +341,44 @@ const onMenuItemTap = (
   text-shadow: 0 2rpx 8rpx rgba(180, 60, 100, 0.25);
 }
 
+.nickname--guest {
+  color: #fff;
+}
+
 .gender-icon {
   width: 32rpx;
   height: 32rpx;
   flex-shrink: 0;
+}
+
+.guest-login-pill {
+  height: 42rpx;
+  padding: 0 16rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.82);
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  box-shadow: 0 4rpx 14rpx rgba(16, 185, 129, 0.16);
+}
+
+.guest-login-dot {
+  font-size: 16rpx;
+  color: #10b981;
+  line-height: 1;
+}
+
+.guest-login-text {
+  font-size: 21rpx;
+  color: #059669;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.guest-desc {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2rpx 6rpx rgba(180, 60, 100, 0.2);
 }
 
 .stats-row {

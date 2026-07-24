@@ -14,6 +14,13 @@
                 "navigationStyle": "custom",
                 "backgroundColor": "#5AC7F0"
             }
+        },
+        {
+            "path": "pages/developing/index",
+            "style": {
+                "navigationStyle": "custom",
+                "backgroundColor": "#F7F8FC"
+            }
         }
     ],
     "subPackages": [
@@ -119,6 +126,27 @@
                         "navigationStyle": "custom",
                         "backgroundColor": "#F6F7FB"
                     }
+                },
+                {
+                    "path": "wzry-farm/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#ECFDF5"
+                    }
+                },
+                {
+                    "path": "wzry-farm/calc/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#ECFDF5"
+                    }
+                },
+                {
+                    "path": "wzry-farm/wiki/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
                 }
             ]
         },
@@ -150,6 +178,13 @@
                 },
                 {
                     "path": "settings/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F6F7FB"
+                    }
+                },
+                {
+                    "path": "sync/index",
                     "style": {
                         "navigationStyle": "custom",
                         "backgroundColor": "#F6F7FB"

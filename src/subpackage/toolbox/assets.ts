@@ -9,7 +9,12 @@ export const TOOL_ICONS = {
 
 export const wzryTools: Tool[] = [
   { id: 'wzry_zlcx', name: '战力查询', icon: TOOL_ICONS.wzryZlcx },
-  { id: 'wzry_ncjsq', name: '农场计算器', icon: TOOL_ICONS.wzryNcjsq },
+  {
+    id: 'wzry_ncjsq',
+    name: '农场计算器',
+    icon: TOOL_ICONS.wzryNcjsq,
+    url: '/subpackage/toolbox/wzry-farm/index',
+  },
 ]
 
 export const dailyTools: Tool[] = [

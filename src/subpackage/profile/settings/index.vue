@@ -57,6 +57,10 @@
     </view>
 
     <text class="settings-tip">头像、昵称与性别会同步到「我的」页面</text>
+
+    <view v-if="userStore.isLoggedIn" class="logout-btn" @tap="onLogout">
+      <text class="logout-text">退出登录</text>
+    </view>
   </view>
 </template>
 
@@ -110,6 +114,20 @@ const onNicknameBlur = () => {
 
 const onNicknameConfirm = () => {
   saveNickname()
+}
+
+const onLogout = () => {
+  uni.showModal({
+    title: '退出登录',
+    content: '退出后将清除当前微信头像和昵称，回到未登录状态。',
+    confirmText: '退出',
+    confirmColor: '#EF4444',
+    success: (res) => {
+      if (!res.confirm) return
+      userStore.logoutWechatProfile()
+      uni.showToast({ title: '已退出登录', icon: 'success' })
+    },
+  })
 }
 </script>
 
@@ -271,6 +289,24 @@ const onNicknameConfirm = () => {
   line-height: 1.5;
 }
 
+.logout-btn {
+  margin-top: 48rpx;
+  height: 88rpx;
+  border-radius: 22rpx;
+  background: #fff;
+  border: 1rpx solid rgba(239, 68, 68, 0.12);
+  box-shadow: 0 8rpx 28rpx rgba(239, 68, 68, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-text {
+  font-size: 28rpx;
+  color: #ef4444;
+  font-weight: 700;
+}
+
 .settings-page--dark {
   background: #1a1a2e;
 
@@ -320,6 +356,16 @@ const onNicknameConfirm = () => {
 
   .settings-tip {
     color: #9ea5c7;
+  }
+
+  .logout-btn {
+    background: #252542;
+    border-color: rgba(248, 113, 113, 0.28);
+    box-shadow: 0 8rpx 28rpx rgba(0, 0, 0, 0.24);
+  }
+
+  .logout-text {
+    color: #f87171;
   }
 }
 </style>

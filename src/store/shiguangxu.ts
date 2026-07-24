@@ -6,8 +6,16 @@ import {
   endOfWeek,
   isDateInRange,
 } from '@/utils/sgxDate'
+import {
+  fetchSgxTodoCloudSnapshot,
+  saveSgxTodoCloudSnapshot,
+} from '@/services/sgxTodoCloud'
 
 const STORAGE_PREFIX = 'sgx_'
+const TODO_CLOUD_UPDATED_AT_KEY = 'todos_cloud_updated_at'
+const TODO_CLOUD_AUTOSAVE_DELAY = 800
+
+let todoCloudAutosaveTimer: ReturnType<typeof setTimeout> | null = null
 
 export type TodoPriority = 'urgent_important' | 'important' | 'urgent' | 'normal'
 export interface TodoItem {
@@ -171,6 +179,14 @@ function loadJson<T>(key: string, fallback: T): T {
   return fallback
 }
 
+function hasJson(key: string): boolean {
+  try {
+    return !!uni.getStorageSync(STORAGE_PREFIX + key)
+  } catch {
+    return false
+  }
+}
+
 function saveJson(key: string, data: unknown) {
   uni.setStorageSync(STORAGE_PREFIX + key, JSON.stringify(data))
 }
@@ -274,6 +290,14 @@ const STAT_COLORS = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC
 export const useShiguangxuStore = defineStore('shiguangxu', {
   state: () => ({
     todos: loadJson<TodoItem[]>('todos', defaultTodos).map(migrateTodo),
+    todoCloudUpdatedAt: loadJson<number>(
+      TODO_CLOUD_UPDATED_AT_KEY,
+      hasJson('todos') ? 1 : 0,
+    ),
+    todoCloudLoading: false,
+    todoCloudSaving: false,
+    todoCloudPendingSave: false,
+    todoCloudPulling: false,
     goals: loadJson<GoalItem[]>('goals', defaultGoals).map(migrateGoal),
     habits: loadJson<HabitItem[]>('habits', defaultHabits),
     pomodoroMinutes: 25,
@@ -329,7 +353,11 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
 
   actions: {
     persistTodos() {
+      const updatedAt = Date.now()
       saveJson('todos', this.todos)
+      saveJson(TODO_CLOUD_UPDATED_AT_KEY, updatedAt)
+      this.todoCloudUpdatedAt = updatedAt
+      this.scheduleTodosCloudSync()
     },
     persistGoals() {
       saveJson('goals', this.goals)
@@ -339,6 +367,97 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
     },
     persistPomodoroSessions() {
       saveJson('pomodoro_sessions', this.pomodoroSessionsToday)
+    },
+
+    applyTodosFromCloud(todos: TodoItem[], updatedAt: number) {
+      this.todos = todos.map(migrateTodo)
+      this.todoCloudUpdatedAt = updatedAt
+      saveJson('todos', this.todos)
+      saveJson(TODO_CLOUD_UPDATED_AT_KEY, updatedAt)
+    },
+
+    async syncTodosFromCloud() {
+      if (this.todoCloudLoading || this.todoCloudPulling) return
+      this.todoCloudLoading = true
+      try {
+        const cloud = await fetchSgxTodoCloudSnapshot()
+        if (!cloud) {
+          if (this.todoCloudUpdatedAt > 0) {
+            await this.syncTodosToCloud()
+          }
+          return
+        }
+
+        if (cloud.updatedAt > this.todoCloudUpdatedAt) {
+          this.applyTodosFromCloud(cloud.todos, cloud.updatedAt)
+          return
+        }
+
+        if (this.todoCloudUpdatedAt > cloud.updatedAt) {
+          await this.syncTodosToCloud()
+        }
+      } finally {
+        this.todoCloudLoading = false
+      }
+    },
+
+    async syncTodosToCloud(): Promise<boolean> {
+      if (this.todoCloudUpdatedAt <= 0) return false
+      if (this.todoCloudSaving) {
+        this.todoCloudPendingSave = true
+        return false
+      }
+      this.todoCloudSaving = true
+      let ok = false
+      try {
+        ok = await saveSgxTodoCloudSnapshot(this.todos, this.todoCloudUpdatedAt)
+      } finally {
+        this.todoCloudSaving = false
+        if (this.todoCloudPendingSave) {
+          this.todoCloudPendingSave = false
+          void this.syncTodosToCloud()
+        }
+      }
+      return ok
+    },
+
+    scheduleTodosCloudSync() {
+      if (todoCloudAutosaveTimer) {
+        clearTimeout(todoCloudAutosaveTimer)
+      }
+      todoCloudAutosaveTimer = setTimeout(() => {
+        todoCloudAutosaveTimer = null
+        void this.syncTodosToCloud()
+      }, TODO_CLOUD_AUTOSAVE_DELAY)
+    },
+
+    async uploadTodosToCloud(): Promise<boolean> {
+      if (todoCloudAutosaveTimer) {
+        clearTimeout(todoCloudAutosaveTimer)
+        todoCloudAutosaveTimer = null
+      }
+      const updatedAt = Date.now()
+      this.todoCloudUpdatedAt = updatedAt
+      saveJson('todos', this.todos)
+      saveJson(TODO_CLOUD_UPDATED_AT_KEY, updatedAt)
+      return this.syncTodosToCloud()
+    },
+
+    async pullTodosFromCloud(): Promise<boolean> {
+      if (this.todoCloudPulling) return false
+      if (todoCloudAutosaveTimer) {
+        clearTimeout(todoCloudAutosaveTimer)
+        todoCloudAutosaveTimer = null
+      }
+      this.todoCloudPulling = true
+      try {
+        const cloud = await fetchSgxTodoCloudSnapshot()
+        if (!cloud) return false
+        this.applyTodosFromCloud(cloud.todos, cloud.updatedAt)
+        return true
+      } finally {
+        this.todoCloudPulling = false
+      }
     },
 
     todosOnDate(dateStr: string): TodoItem[] {
