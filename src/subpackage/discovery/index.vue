@@ -124,8 +124,10 @@ const store = useToolsStore()
 const userStore = useUserStore()
 const { activeTab, categoryFilter } = storeToRefs(store)
 const { layout } = useNavBarLayout()
+// 发现页顶部内容 Tab，activeTab 存在 tools store 中供子页面复用。
 const tabs = ['推荐', '最新', '关注']
 
+// 分类数据来自 store，图标路径由 assets.ts 补齐。
 const categories = computed(() =>
   store.categories.map((cat) => ({
     ...cat,

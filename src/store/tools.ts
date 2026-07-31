@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 
+// 工具页和发现页共用的静态数据，以及最近使用工具的本地缓存。
 export interface Tool {
   id: string
   name: string
@@ -44,6 +45,7 @@ export const hotSearchKeywords = ['铃芽之旅', 'AI 绘图', '原神 4.7', 'RT
 
 const RECENT_STORAGE_KEY = 'toolbox_recent_tools'
 
+// 从本地恢复最近使用工具；解析失败时直接回退为空列表。
 function loadRecentTools(): Tool[] {
   try {
     const raw = uni.getStorageSync(RECENT_STORAGE_KEY)
@@ -57,10 +59,12 @@ function loadRecentTools(): Tool[] {
   return []
 }
 
+// 保存最近使用工具的顺序，最新使用的工具会排在最前。
 function saveRecentTools(tools: Tool[]) {
   uni.setStorageSync(RECENT_STORAGE_KEY, JSON.stringify(tools))
 }
 
+// 发现页分类筛选：部分分类通过映射关键词匹配多个文章分类。
 function matchesCategoryFilter(article: Article, topicName: string | null): boolean {
   if (!topicName) return true
   const keywords = categoryTopicMap[topicName]
@@ -68,6 +72,7 @@ function matchesCategoryFilter(article: Article, topicName: string | null): bool
   return keywords.some((kw) => article.category.includes(kw))
 }
 
+// 发现页搜索：标题、分类、详情标签一起参与模糊匹配。
 function matchesKeyword(article: Article, detail: ArticleDetail | undefined, keyword: string): boolean {
   const q = keyword.trim().toLowerCase()
   if (!q) return true
@@ -277,7 +282,9 @@ const articleDetailsData: Record<number, ArticleDetail> = {
 
 export const useToolsStore = defineStore('tools', {
   state: () => ({
+    // 本机最近使用工具，不依赖云端。
     recentTools: loadRecentTools(),
+    // 分类与文章仍是本地 mock 数据，页面只读取和筛选。
     categories: categoriesData,
     recommendArticles,
     latestArticles,

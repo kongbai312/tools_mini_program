@@ -119,9 +119,11 @@ const toolsRole = '/static/imgs/tools_role.png'
 const store = useToolsStore()
 const userStore = useUserStore()
 const { layout, safeRightGap } = useNavBarLayout()
+// 最近工具编辑态：开启后点击工具不跳转，只允许移除。
 const isEditingRecent = ref(false)
 
 onMounted(() => {
+  // 首次进入工具箱时写入默认最近工具，后续按用户点击排序。
   if (store.recentTools.length === 0) {
     store.initRecentTools(defaultRecentTools)
   }
@@ -141,6 +143,7 @@ const onRecentTap = (tool: Tool) => {
 }
 
 const onToolTap = (tool: Tool) => {
+  // 所有工具点击都会刷新最近使用列表；没有 url 的工具提示开发中。
   store.addRecentTool(tool)
   if (tool.url) {
     uni.navigateTo({ url: tool.url })

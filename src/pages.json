@@ -147,6 +147,20 @@
                         "navigationStyle": "custom",
                         "backgroundColor": "#F6F7FB"
                     }
+                },
+                {
+                    "path": "scoreboard/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#EEF4FF"
+                    }
+                },
+                {
+                    "path": "scoreboard/room/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F4F7FB"
+                    }
                 }
             ]
         },

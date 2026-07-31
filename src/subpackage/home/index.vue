@@ -139,7 +139,9 @@ const { currentTopics, activeSource, sources } = storeToRefs(store)
 const weather = computed(() => store.weather)
 const { layout } = useNavBarLayout()
 const instance = getCurrentInstance()
+// 热搜来源弹层的展开状态。
 const sourceOpen = ref(false)
+// 热搜卡片高度会根据页面布局动态计算，保证列表在卡片内滚动。
 const topicsScrollHeight = ref(0)
 const topicsScrollTop = ref(0)
 let heightTimer: ReturnType<typeof setTimeout> | null = null

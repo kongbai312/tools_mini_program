@@ -6,18 +6,22 @@
       <view class="back-btn" @tap="goBack">
         <text class="back-icon">‹</text>
       </view>
-      <text class="header-title">设置</text>
+      <text class="header-title">个人信息</text>
       <view class="header-right" />
     </view>
 
     <view class="settings-card">
-      <view class="setting-row setting-row--avatar" @tap="onChooseAvatar">
+      <button
+        class="setting-row setting-row--avatar avatar-btn"
+        open-type="chooseAvatar"
+        @chooseavatar="onChooseAvatar"
+      >
         <text class="setting-label">头像</text>
         <view class="setting-right">
           <image class="avatar-preview" :src="userStore.avatar" mode="aspectFill" />
           <text class="setting-arrow">›</text>
         </view>
-      </view>
+      </button>
 
       <view class="setting-row">
         <text class="setting-label">昵称</text>
@@ -66,7 +70,12 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useUserStore } from '@/store/user'
+import {
+  DEFAULT_AVATAR,
+  DEFAULT_NICKNAME,
+  WECHAT_DEFAULT_NICKNAME,
+  useUserStore,
+} from '@/store/user'
 import { useNavBarLayout } from '@/composables/useNavBarLayout'
 import { PROFILE_ICONS } from '../assets'
 
@@ -90,22 +99,18 @@ const goBack = () => {
   uni.navigateBack()
 }
 
-const onChooseAvatar = () => {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
-    success: (res) => {
-      const path = res.tempFilePaths?.[0]
-      if (path) userStore.setAvatar(path)
-    },
-  })
+const onChooseAvatar = (e: { detail?: { avatarUrl?: string } }) => {
+  const path = e.detail?.avatarUrl?.trim() ?? ''
+  if (!path) return
+  userStore.setAvatar(path)
+  saveProfileIfReady(path, nicknameDraft.value)
 }
 
 const saveNickname = () => {
   if (nicknameDraft.value.trim() === userStore.nickname) return
   const ok = userStore.setNickname(nicknameDraft.value)
   if (!ok) nicknameDraft.value = userStore.nickname
+  saveProfileIfReady(userStore.avatar, nicknameDraft.value)
 }
 
 const onNicknameBlur = () => {
@@ -114,6 +119,18 @@ const onNicknameBlur = () => {
 
 const onNicknameConfirm = () => {
   saveNickname()
+}
+
+const saveProfileIfReady = (avatar: string, nickname: string) => {
+  const trimmedNickname = nickname.trim()
+  if (!avatar || !trimmedNickname) return
+  if (avatar === DEFAULT_AVATAR) return
+  if (trimmedNickname === DEFAULT_NICKNAME || trimmedNickname === WECHAT_DEFAULT_NICKNAME) return
+  userStore.completeWechatProfile({
+    avatar,
+    nickname: trimmedNickname,
+    gender: userStore.gender,
+  })
 }
 
 const onLogout = () => {
@@ -200,6 +217,18 @@ const onLogout = () => {
 
 .setting-row--avatar {
   padding: 12rpx 0;
+}
+
+.avatar-btn {
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  line-height: 1;
+}
+
+.avatar-btn::after {
+  border: none;
 }
 
 .setting-row--gender {

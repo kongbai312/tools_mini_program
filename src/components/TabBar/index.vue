@@ -26,6 +26,7 @@ import { TABBAR_DEVELOPING_URL, TABBAR_OPEN_CONFIG, type TabKey } from '@/config
 const props = defineProps<{ current: number }>()
 const userStore = useUserStore()
 
+// 自定义 TabBar 数据源。open 由配置控制，未开放时跳转开发中页面。
 const tabList: { key: TabKey; icon: string; activeIcon: string; text: string; open: boolean }[] = [
   {
     key: 'home',
@@ -64,6 +65,7 @@ const pageUrls = [
   '/subpackage/profile/index',
 ]
 
+// Tab 页之间使用 reLaunch，避免分包 Tab 页互相堆叠页面栈。
 const onTabChange = (index: number) => {
   if (index === props.current) return
   const target = tabList[index]

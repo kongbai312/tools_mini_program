@@ -1,3 +1,4 @@
+// 发现页图片资源统一用 /static 绝对路径，避免分包真机路径不一致。
 export const categoryIcons: Record<number, string> = {
   1: '/static/imgs/discover/anime.png',
   2: '/static/imgs/discover/ai.png',

@@ -3,13 +3,19 @@ import { defineStore } from 'pinia'
 export type Theme = 'light' | 'dark'
 export type Gender = 'male' | 'female'
 
+// 用户中心的本地持久化 key，集中维护便于迁移和排查。
 const CHECKIN_STORAGE_KEY = 'profile_checkin'
 const THEME_STORAGE_KEY = 'profile_theme'
 const PROFILE_STORAGE_KEY = 'profile_info'
 
-const DEFAULT_AVATAR = '/static/imgs/my_role.png'
-const DEFAULT_NICKNAME = '星野酱'
+const LEGACY_DEFAULT_AVATAR = '/static/imgs/my_role.png'
+const LEGACY_GUEST_AVATAR = '/subpackage/profile/static/imgs/profile-guest-avatar.svg.svg'
+const LEGACY_DEFAULT_NICKNAME = '星野酱'
+
+export const DEFAULT_AVATAR = '/subpackage/profile/static/imgs/profile-guest-avatar.png'
+export const DEFAULT_NICKNAME = '未设置'
 const NICKNAME_MAX_LEN = 16
+export const WECHAT_DEFAULT_NICKNAME = '微信用户'
 
 interface ProfilePersist {
   avatar: string
@@ -23,6 +29,7 @@ const THEME_BG = {
   dark: '#1A1A2E',
 } as const
 
+// 读取当前主题，初始化时优先恢复用户上次选择。
 function loadTheme(): Theme {
   try {
     const raw = uni.getStorageSync(THEME_STORAGE_KEY)
@@ -33,6 +40,7 @@ function loadTheme(): Theme {
   return 'light'
 }
 
+// 真机和 H5 的主题切换，都通过这里同步到系统壳层。
 export function applyAppTheme(theme: Theme) {
   const isDark = theme === 'dark'
   const bg = isDark ? THEME_BG.dark : THEME_BG.light
@@ -47,6 +55,7 @@ export function applyAppTheme(theme: Theme) {
   })
 }
 
+// 签到按自然日计算，所以用本地日期字符串做去重标识。
 function getTodayStr(): string {
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -86,6 +95,7 @@ function saveCheckInPersist(data: CheckInPersist) {
   uni.setStorageSync(CHECKIN_STORAGE_KEY, JSON.stringify(data))
 }
 
+// 个人资料只保存 avatar / nickname / gender / isLoggedIn 四项。
 function loadProfile(): ProfilePersist {
   const defaults: ProfilePersist = {
     avatar: DEFAULT_AVATAR,
@@ -97,9 +107,18 @@ function loadProfile(): ProfilePersist {
     const raw = uni.getStorageSync(PROFILE_STORAGE_KEY)
     if (!raw) return defaults
     const parsed = JSON.parse(raw) as Partial<ProfilePersist>
-    const nickname = (parsed.nickname ?? '').trim() || defaults.nickname
+    const parsedAvatar = parsed.avatar || defaults.avatar
+    const avatar =
+      parsedAvatar === LEGACY_DEFAULT_AVATAR || parsedAvatar === LEGACY_GUEST_AVATAR
+        ? defaults.avatar
+        : parsedAvatar
+    const parsedNickname = (parsed.nickname ?? '').trim()
+    const nickname =
+      parsedNickname && parsedNickname !== LEGACY_DEFAULT_NICKNAME
+        ? parsedNickname
+        : defaults.nickname
     return {
-      avatar: parsed.avatar || defaults.avatar,
+      avatar,
       nickname: nickname.slice(0, NICKNAME_MAX_LEN),
       gender:
         parsed.gender === 'male' || parsed.gender === 'female'
@@ -112,8 +131,14 @@ function loadProfile(): ProfilePersist {
   }
 }
 
+// 把个人资料写回本地缓存，避免页面各自散写 storage 逻辑。
 function saveProfile(data: ProfilePersist) {
   uni.setStorageSync(PROFILE_STORAGE_KEY, JSON.stringify(data))
+}
+
+// 微信默认昵称不算“用户真正设置过的昵称”。
+export function isWechatDefaultNickname(name: string): boolean {
+  return name.trim() === WECHAT_DEFAULT_NICKNAME
 }
 
 function formatCacheSize(kb: number): string {
@@ -127,6 +152,7 @@ export const useUserStore = defineStore('user', {
     const checkIn = loadCheckInPersist()
     const profile = loadProfile()
     return {
+      // 下面这些字段是个人中心和签到页直接展示的数据。
       avatar: profile.avatar,
       nickname: profile.nickname,
       gender: profile.gender,
@@ -191,6 +217,14 @@ export const useUserStore = defineStore('user', {
         uni.showToast({ title: '昵称不能为空', icon: 'none' })
         return false
       }
+      if (isWechatDefaultNickname(trimmed)) {
+        uni.showToast({ title: '请填写真实昵称', icon: 'none' })
+        return false
+      }
+      if (trimmed === DEFAULT_NICKNAME) {
+        uni.showToast({ title: '请填写昵称', icon: 'none' })
+        return false
+      }
       if (trimmed.length > NICKNAME_MAX_LEN) {
         uni.showToast({ title: `昵称最多${NICKNAME_MAX_LEN}字`, icon: 'none' })
         return false
@@ -204,6 +238,18 @@ export const useUserStore = defineStore('user', {
       if (this.gender === gender) return
       this.gender = gender
       this.persistProfile()
+    },
+    completeWechatProfile(profile: { avatar: string; nickname: string; gender?: Gender }): boolean {
+      const nickname = profile.nickname.trim()
+      if (!profile.avatar || !nickname || nickname === DEFAULT_NICKNAME || isWechatDefaultNickname(nickname)) return false
+      this.avatar = profile.avatar
+      this.nickname = nickname.slice(0, NICKNAME_MAX_LEN)
+      if (profile.gender === 'male' || profile.gender === 'female') {
+        this.gender = profile.gender
+      }
+      this.isLoggedIn = true
+      this.persistProfile()
+      return true
     },
     syncWechatProfile(profile: { avatar: string; nickname: string; gender?: Gender }) {
       this.avatar = profile.avatar || this.avatar

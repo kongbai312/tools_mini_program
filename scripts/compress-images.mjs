@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const srcDir = path.join(__dirname, '../src/static/imgs')
 
 /** @type {{ file: string; maxWidth: number; quality: number }[]} */
+// 只压缩主包静态图，避免误处理分包或源码外图片。
 const tasks = [
   { file: 'home-bg.png', maxWidth: 750, quality: 82 },
   { file: 'home_role.png', maxWidth: 400, quality: 85 },

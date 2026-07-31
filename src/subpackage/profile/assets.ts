@@ -1,3 +1,4 @@
+// 我的页所有图标路径集中维护，页面只按语义 key 使用。
 export const PROFILE_ICONS = {
   member: '/subpackage/profile/static/imgs/huangjinhuiyuan.svg',
   checkin: '/subpackage/profile/static/imgs/qiandao.svg',
@@ -12,6 +13,7 @@ export const PROFILE_ICONS = {
   about: '/subpackage/profile/static/imgs/guanyu.svg',
   cloud: '/subpackage/profile/static/imgs/my-cloud.svg',
   none: '/subpackage/profile/static/imgs/zanwu.svg',
+  personInfo: '/subpackage/profile/static/imgs/profile-personInfo.svg',
 } as const
 
 /** 每 10 级一档：1-10、11-20 … */

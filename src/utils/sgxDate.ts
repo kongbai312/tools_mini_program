@@ -1,3 +1,4 @@
+// 时光序使用的日期工具，统一采用 YYYY-MM-DD 字符串避免跨端时区显示差异。
 export function formatDateStr(d: Date): string {
   const m = `${d.getMonth() + 1}`.padStart(2, '0')
   const day = `${d.getDate()}`.padStart(2, '0')
@@ -8,6 +9,7 @@ export function todayStr(): string {
   return formatDateStr(new Date())
 }
 
+// 解析日期时固定到当天 00:00，供日历和周视图计算使用。
 export function parseDate(str: string): Date {
   return new Date(`${str}T00:00:00`)
 }

@@ -15,9 +15,11 @@ const STORAGE_PREFIX = 'sgx_'
 const TODO_CLOUD_UPDATED_AT_KEY = 'todos_cloud_updated_at'
 const TODO_CLOUD_AUTOSAVE_DELAY = 800
 
+// 待办云同步使用防抖保存，避免用户连续编辑时频繁写云数据库。
 let todoCloudAutosaveTimer: ReturnType<typeof setTimeout> | null = null
 
 export type TodoPriority = 'urgent_important' | 'important' | 'urgent' | 'normal'
+export type TodoColorStyle = 'auto' | 'manual' | 'custom'
 export interface TodoItem {
   id: string
   title: string
@@ -30,6 +32,8 @@ export interface TodoItem {
   dueTime: string
   /** 自定义背景色，空表示按规则自动分配 */
   color: string
+  /** 背景色来源：自动分配 / 预置色 / 自定义 */
+  colorStyle: TodoColorStyle
 }
 
 export const TODO_CATEGORY_COLOR: Record<string, string> = {
@@ -52,69 +56,41 @@ export const TODO_EVENT_COLORS = [
   '#9333EA',
 ] as const
 
-export function todoSlotKey(t: TodoItem): string {
-  return `${todoDueDate(t)}|${(t.dueTime || '').trim()}`
+function normalizeTodoColorKey(title: string): string {
+  return title.trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
-function sortTodosInOrder(a: TodoItem, b: TodoItem) {
-  return a.createdAt - b.createdAt || a.id.localeCompare(b.id)
+function hashTodoColorKey(key: string): number {
+  let hash = 0
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  }
+  return hash
 }
 
-/** 同一日期内解析展示色：未自定义则同刻不重色，同日尽量不重色 */
+function pickTodoDefaultColor(title: string): string {
+  const key = normalizeTodoColorKey(title)
+  if (!key) return TODO_EVENT_COLORS[0]
+  return TODO_EVENT_COLORS[hashTodoColorKey(key) % TODO_EVENT_COLORS.length]
+}
+
+function isTodoColorStyle(value: unknown): value is TodoColorStyle {
+  return value === 'auto' || value === 'manual' || value === 'custom'
+}
+
+/** 解析展示色：自定义色优先；默认色按待办内容稳定生成，同内容保持同色 */
 export function resolveTodosDisplayColors(scopeTodos: TodoItem[]): Record<string, string> {
-  const sorted = [...scopeTodos].sort(sortTodosInOrder)
   const result: Record<string, string> = {}
-  const usedInDay = new Set<string>()
 
-  for (const item of sorted) {
+  for (const item of scopeTodos) {
     const custom = item.color?.trim()
-    if (custom) {
-      result[item.id] = custom
-      usedInDay.add(custom)
-      continue
-    }
-
-    const slot = todoSlotKey(item)
-    const slotPeers = sorted.filter((t) => todoSlotKey(t) === slot)
-    const slotIndex = slotPeers.findIndex((t) => t.id === item.id)
-    const usedSlot = new Set<string>()
-    for (const t of slotPeers) {
-      if (t.id === item.id) break
-      const c = result[t.id]
-      if (c) usedSlot.add(c)
-    }
-
-    let picked = ''
-    for (let i = 0; i < TODO_EVENT_COLORS.length; i++) {
-      const c = TODO_EVENT_COLORS[(slotIndex + i) % TODO_EVENT_COLORS.length]
-      if (!usedSlot.has(c) && !usedInDay.has(c)) {
-        picked = c
-        break
-      }
-    }
-    if (!picked) {
-      for (let i = 0; i < TODO_EVENT_COLORS.length; i++) {
-        const c = TODO_EVENT_COLORS[(slotIndex + i) % TODO_EVENT_COLORS.length]
-        if (!usedSlot.has(c)) {
-          picked = c
-          break
-        }
-      }
-    }
-    if (!picked) {
-      const hue = (slotIndex * 53 + sorted.indexOf(item)) % 360
-      picked = `hsl(${hue}, 58%, 38%)`
-    }
-    result[item.id] = picked
-    usedInDay.add(picked)
+    result[item.id] = custom || pickTodoDefaultColor(item.title)
   }
   return result
 }
 
-export function resolveTodoDisplayColor(item: TodoItem, allTodos: TodoItem[]): string {
-  const day = todoDueDate(item)
-  const dayTodos = allTodos.filter((t) => todoDueDate(t) === day)
-  const map = resolveTodosDisplayColors(dayTodos)
+export function resolveTodoDisplayColor(item: TodoItem, _allTodos: TodoItem[]): string {
+  const map = resolveTodosDisplayColors([item])
   return map[item.id] ?? TODO_EVENT_COLORS[0]
 }
 
@@ -187,6 +163,7 @@ function hasJson(key: string): boolean {
   }
 }
 
+// 统一封装时光序本地缓存写入，所有 key 都加 sgx_ 前缀。
 function saveJson(key: string, data: unknown) {
   uni.setStorageSync(STORAGE_PREFIX + key, JSON.stringify(data))
 }
@@ -203,7 +180,13 @@ function migrateTodo(raw: TodoItem): TodoItem {
   const dueDate = raw.dueDate || dueFromCreated(raw.createdAt)
   const dueTime = raw.dueTime ?? ''
   const color = raw.color ?? ''
-  return { ...raw, dueDate, dueTime, color }
+  const rawColorStyle = (raw as Partial<TodoItem>).colorStyle
+  const colorStyle = isTodoColorStyle(rawColorStyle)
+    ? rawColorStyle
+    : color
+      ? 'custom'
+      : 'auto'
+  return { ...raw, dueDate, dueTime, color, colorStyle }
 }
 
 const defaultTodos: TodoItem[] = [
@@ -217,6 +200,7 @@ const defaultTodos: TodoItem[] = [
     dueDate: todayStr(),
     dueTime: '09:00',
     color: '',
+    colorStyle: 'auto',
   },
   {
     id: 'demo_2',
@@ -228,6 +212,7 @@ const defaultTodos: TodoItem[] = [
     dueDate: todayStr(),
     dueTime: '20:00',
     color: '',
+    colorStyle: 'auto',
   },
 ]
 
@@ -289,6 +274,7 @@ const STAT_COLORS = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC
 
 export const useShiguangxuStore = defineStore('shiguangxu', {
   state: () => ({
+    // 待办 / 目标 / 习惯默认走本地缓存，待办额外支持云同步。
     todos: loadJson<TodoItem[]>('todos', defaultTodos).map(migrateTodo),
     todoCloudUpdatedAt: loadJson<number>(
       TODO_CLOUD_UPDATED_AT_KEY,
@@ -353,6 +339,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
 
   actions: {
     persistTodos() {
+      // 待办修改后先落本地，再安排一次云端防抖同步。
       const updatedAt = Date.now()
       saveJson('todos', this.todos)
       saveJson(TODO_CLOUD_UPDATED_AT_KEY, updatedAt)
@@ -370,6 +357,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
     },
 
     applyTodosFromCloud(todos: TodoItem[], updatedAt: number) {
+      // 云端数据较新时覆盖本地，并同步本地更新时间。
       this.todos = todos.map(migrateTodo)
       this.todoCloudUpdatedAt = updatedAt
       saveJson('todos', this.todos)
@@ -377,6 +365,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
     },
 
     async syncTodosFromCloud() {
+      // 拉取云端快照后按 updatedAt 决定覆盖本地或反向上传。
       if (this.todoCloudLoading || this.todoCloudPulling) return
       this.todoCloudLoading = true
       try {
@@ -402,6 +391,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
     },
 
     async syncTodosToCloud(): Promise<boolean> {
+      // 如果正在保存，标记 pending，当前保存结束后再补一次。
       if (this.todoCloudUpdatedAt <= 0) return false
       if (this.todoCloudSaving) {
         this.todoCloudPendingSave = true
@@ -486,6 +476,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
       dueDate?: string,
       dueTime?: string,
       color?: string,
+      colorStyle: TodoColorStyle = 'auto',
     ) {
       const text = title.trim()
       if (!text) return false
@@ -499,6 +490,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
         dueDate: dueDate || todayStr(),
         dueTime: dueTime?.trim() || '',
         color: color?.trim() || '',
+        colorStyle,
       })
       this.persistTodos()
       return true
@@ -519,6 +511,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
       dueDate?: string,
       dueTime?: string,
       color?: string,
+      colorStyle?: TodoColorStyle,
     ) {
       const item = this.todos.find((t) => t.id === id)
       if (!item) return false
@@ -530,6 +523,7 @@ export const useShiguangxuStore = defineStore('shiguangxu', {
       item.dueDate = dueDate || item.dueDate
       item.dueTime = dueTime?.trim() ?? item.dueTime
       item.color = color !== undefined ? color.trim() : item.color
+      item.colorStyle = colorStyle ?? item.colorStyle
       this.persistTodos()
       return true
     },

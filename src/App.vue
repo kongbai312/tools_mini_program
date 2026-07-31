@@ -3,6 +3,7 @@ import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 
 onLaunch(() => {
+  // 应用启动时恢复用户选择的主题，并同步小程序导航栏颜色。
   useUserStore().initTheme()
 })
 onShow(() => {

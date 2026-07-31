@@ -256,26 +256,56 @@
           </view>
         </view>
         <text class="add-label">背景颜色</text>
-        <view class="color-mode-row">
+        <view class="color-source-row">
           <view
-            class="color-mode-chip"
-            :class="{ 'color-mode-chip--active': colorMode === 'default' }"
-            @tap="colorMode = 'default'"
+            class="color-source-chip"
+            :class="{ 'color-source-chip--active': colorSource === 'default' }"
+            @tap="colorSource = 'default'"
           >
-            <text class="color-mode-chip-text">默认</text>
+            <text class="color-source-chip-text">默认</text>
           </view>
           <view
-            class="color-mode-chip"
-            :class="{ 'color-mode-chip--active': colorMode === 'custom' }"
-            @tap="colorMode = 'custom'"
+            class="color-source-chip"
+            :class="{ 'color-source-chip--active': colorSource === 'custom' }"
+            @tap="colorSource = 'custom'"
           >
-            <text class="color-mode-chip-text">自定义</text>
+            <text class="color-source-chip-text">自定义</text>
           </view>
         </view>
-        <text v-if="colorMode === 'default'" class="color-hint">
-          自动分配颜色，与同日期时刻的其他待办区分
-        </text>
-        <RgbColorPicker v-else v-model="newColorCustom" />
+        <view v-if="colorSource === 'default'">
+          <view class="color-mode-row">
+            <view
+              class="color-mode-chip"
+              :class="{ 'color-mode-chip--active': defaultColorMode === 'auto' }"
+              @tap="defaultColorMode = 'auto'"
+            >
+              <text class="color-mode-chip-text">自动分配</text>
+            </view>
+            <view
+              class="color-mode-chip"
+              :class="{ 'color-mode-chip--active': defaultColorMode === 'manual' }"
+              @tap="defaultColorMode = 'manual'"
+            >
+              <text class="color-mode-chip-text">手动选择</text>
+            </view>
+          </view>
+          <text v-if="defaultColorMode === 'auto'" class="color-hint">
+            自动分配颜色，内容一致时保持同色
+          </text>
+          <view v-else class="color-palette">
+            <view
+              v-for="color in manualColorOptions"
+              :key="color"
+              class="color-option"
+              :class="{ 'color-option--active': newManualColor === color }"
+              :style="{ background: color }"
+              @tap="newManualColor = color"
+            >
+              <text v-if="newManualColor === color" class="color-option-check">✓</text>
+            </view>
+          </view>
+        </view>
+        <RgbColorPicker v-else v-model="newCustomColor" />
         <text class="add-label">重要紧急程度</text>
         <view class="chip-row chip-row--wrap">
           <view
@@ -305,6 +335,7 @@ import {
   useShiguangxuStore,
   TODO_CATEGORIES,
   TODO_PRIORITY_LABEL,
+  TODO_EVENT_COLORS,
   resolveTodoDisplayColor,
   todoDueDate,
   type TodoPriority,
@@ -324,7 +355,8 @@ import {
 import PageHeader from '../components/PageHeader.vue'
 import RgbColorPicker from '../components/RgbColorPicker.vue'
 
-type TodoColorMode = 'default' | 'custom'
+type TodoColorSource = 'default' | 'custom'
+type DefaultColorMode = 'auto' | 'manual'
 const WEEK_COL_WIDTH = 88
 
 const userStore = useUserStore()
@@ -360,8 +392,10 @@ const newCategory = ref<string>(TODO_CATEGORIES[0])
 const newPriority = ref<TodoPriority>('important')
 const newDueDate = ref(today)
 const newDueTime = ref('09:00')
-const colorMode = ref<TodoColorMode>('default')
-const newColorCustom = ref('#8B5CF6')
+const colorSource = ref<TodoColorSource>('default')
+const defaultColorMode = ref<DefaultColorMode>('auto')
+const newManualColor = ref<string>(TODO_EVENT_COLORS[0])
+const newCustomColor = ref('#8B5CF6')
 
 type DayBucket = {
   todos: TodoItem[]
@@ -426,19 +460,21 @@ function buildTodosByDate(todos: TodoItem[]) {
 const todosByDate = computed(() => buildTodosByDate(store.todos))
 const dayBucket = computed(() => todosByDate.value.get(selectedDate.value) ?? EMPTY_DAY_BUCKET)
 
-const resetForm = () => {
+const resetForm = (dueDate = today) => {
   editingId.value = null
   newTitle.value = ''
   newCategory.value = TODO_CATEGORIES[0]
   newPriority.value = 'important'
-  newDueDate.value = today
+  newDueDate.value = dueDate
   newDueTime.value = '09:00'
-  colorMode.value = 'default'
-  newColorCustom.value = '#8B5CF6'
+  colorSource.value = 'default'
+  defaultColorMode.value = 'auto'
+  newManualColor.value = TODO_EVENT_COLORS[0]
+  newCustomColor.value = '#8B5CF6'
 }
 
 const openAdd = () => {
-  resetForm()
+  resetForm(selectedDate.value)
   showAdd.value = true
 }
 
@@ -450,12 +486,18 @@ const openEdit = (item: TodoItem) => {
   newPriority.value = item.priority
   newDueDate.value = item.dueDate
   newDueTime.value = item.dueTime || ''
-  if (item.color?.trim()) {
-    colorMode.value = 'custom'
-    newColorCustom.value = item.color
+  if (item.colorStyle === 'manual') {
+    colorSource.value = 'default'
+    defaultColorMode.value = 'manual'
+    newManualColor.value = item.color || TODO_EVENT_COLORS[0]
+  } else if (item.colorStyle === 'custom' || item.color?.trim()) {
+    colorSource.value = 'custom'
+    newCustomColor.value = item.color || '#8B5CF6'
   } else {
-    colorMode.value = 'default'
-    newColorCustom.value = '#8B5CF6'
+    colorSource.value = 'default'
+    defaultColorMode.value = 'auto'
+    newManualColor.value = TODO_EVENT_COLORS[0]
+    newCustomColor.value = '#8B5CF6'
   }
   showAdd.value = true
 }
@@ -479,6 +521,25 @@ const priorityOptions = (Object.keys(TODO_PRIORITY_LABEL) as TodoPriority[]).map
   value,
   label: TODO_PRIORITY_LABEL[value],
 }))
+
+const manualColorOptions = computed(() => {
+  const options: string[] = [
+    '#2563EB',
+    '#06B6D4',
+    '#14B8A6',
+    '#10B981',
+    '#84CC16',
+    '#F59E0B',
+    '#F97316',
+    '#EF4444',
+    '#DB2777',
+    '#8B5CF6',
+  ]
+  if (defaultColorMode.value === 'manual' && newManualColor.value && !options.includes(newManualColor.value)) {
+    options.unshift(newManualColor.value)
+  }
+  return options
+})
 
 const quadrants: { priority: TodoPriority; label: string; color: string }[] = [
   { priority: 'urgent_important', label: '重要且紧急', color: '#EF4444' },
@@ -600,7 +661,16 @@ const onTimeChange = (e: { detail: { value: string } }) => {
 
 const submitForm = () => {
   const time = newDueTime.value === '全天' ? '' : newDueTime.value
-  const color = colorMode.value === 'custom' ? newColorCustom.value.trim() : ''
+  const colorStyle = colorSource.value === 'custom'
+    ? 'custom'
+    : defaultColorMode.value === 'manual'
+      ? 'manual'
+      : 'auto'
+  const color = colorStyle === 'custom'
+    ? newCustomColor.value.trim()
+    : colorStyle === 'manual'
+      ? newManualColor.value.trim()
+      : ''
   const isEdit = !!editingId.value
   const ok = isEdit
     ? store.updateTodo(
@@ -611,6 +681,7 @@ const submitForm = () => {
         newDueDate.value,
         time,
         color,
+        colorStyle,
       )
     : store.addTodo(
         newTitle.value,
@@ -619,6 +690,7 @@ const submitForm = () => {
         newDueDate.value,
         time,
         color,
+        colorStyle,
       )
   if (!ok) {
     uni.showToast({ title: '请输入内容', icon: 'none' })
@@ -1355,6 +1427,39 @@ const submitForm = () => {
   display: block;
 }
 
+.color-source-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 14rpx;
+}
+
+.color-source-chip {
+  display: flex;
+  flex: 1;
+  height: 72rpx;
+  border-radius: 16rpx;
+  background: #f3f4f6;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid transparent;
+  box-sizing: border-box;
+}
+
+.color-source-chip--active {
+  background: #f5f3ff;
+  border-color: #8b5cf6;
+}
+
+.color-source-chip-text {
+  font-size: 28rpx;
+  color: #6b7280;
+}
+
+.color-source-chip--active .color-source-chip-text {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
 .color-mode-row {
   display: flex;
   gap: 16rpx;
@@ -1394,6 +1499,44 @@ const submitForm = () => {
   line-height: 1.5;
   margin-bottom: 20rpx;
   display: block;
+}
+
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-bottom: 20rpx;
+}
+
+.color-option {
+  position: relative;
+  flex: 0 0 calc((100% - 56rpx) / 5);
+  height: 64rpx;
+  border-radius: 16rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4rpx 12rpx rgba(31, 41, 55, 0.12);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.color-option--active {
+  border-color: #fff;
+  box-shadow: 0 0 0 4rpx rgba(139, 92, 246, 0.36), 0 6rpx 16rpx rgba(31, 41, 55, 0.16);
+}
+
+.color-option-check {
+  position: absolute;
+  right: 8rpx;
+  bottom: 6rpx;
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #7c3aed;
+  font-size: 18rpx;
+  font-weight: 800;
+  line-height: 26rpx;
+  text-align: center;
 }
 
 .chip-row {

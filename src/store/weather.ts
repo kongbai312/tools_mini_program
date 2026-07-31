@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 
+// 首页天气和热搜榜单的 mock 数据集中放在这里，页面只负责读取和切换。
 export interface HotTopic {
   id: number
   rank: number
@@ -87,6 +88,7 @@ export const useWeatherStore = defineStore('weather', {
       aqi: 32,
       aqiLevel: '优',
     } as WeatherInfo,
+    // 当前热搜数据源索引，和 sources / allTopics 一一对应。
     activeSource: 0,
     sources: ['微博热搜', '知乎榜', '抖音热搜', 'B站热搜'],
     allTopics: [weiboTopics, zhihuTopics, douyinTopics, bilibiliTopics] as HotTopic[][],
