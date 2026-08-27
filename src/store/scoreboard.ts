@@ -5,6 +5,7 @@ import {
   type ScoreChange,
   type ScorePlayer,
   type ScoreRecord as CoreScoreRecord,
+  type ScoreboardLeaderboardRoom,
   type RecentScoreRoomItem,
   type ScoreRole,
   type ScoreboardType,
@@ -57,6 +58,10 @@ export interface OwnedScoreRoom {
 
 export interface RecentScoreRoom extends RecentScoreRoomItem {}
 
+export interface MyScoreRoom extends OwnedScoreRoom {
+  role: ScoreRole
+}
+
 interface ScoreSession {
   room: ScoreRoom
   member: ScoreMember
@@ -89,10 +94,13 @@ export const useScoreboardStore = defineStore('scoreboard', {
     currentMember: null as ScoreMember | null,
     // 房主创建过的活跃房间，来自云端查询。
     ownedRooms: [] as OwnedScoreRoom[],
+    // 当前微信用户创建或加入过的房间，用于“我的排行榜”选择。
+    myRooms: [] as MyScoreRoom[],
     // 本机进入过的房间历史，存本地缓存，作为快捷入口使用。
     recentRooms: [] as RecentScoreRoom[],
     loading: false,
     ownedRoomsLoading: false,
+    myRoomsLoading: false,
     errorMessage: '',
   }),
 
@@ -342,6 +350,24 @@ export const useScoreboardStore = defineStore('scoreboard', {
       } finally {
         this.ownedRoomsLoading = false
       }
+    },
+
+    async loadMyRooms() {
+      this.myRoomsLoading = true
+      this.errorMessage = ''
+      try {
+        this.myRooms = await callScoreboard<MyScoreRoom[]>('listMyRooms')
+        return this.myRooms
+      } catch (error) {
+        this.errorMessage = error instanceof Error ? error.message : '加载房间列表失败'
+        throw error
+      } finally {
+        this.myRoomsLoading = false
+      }
+    },
+
+    async loadRankingRooms(type: ScoreboardType, roomNos: string[]) {
+      return callScoreboard<ScoreboardLeaderboardRoom[]>('getRankingRooms', { type, roomNos })
     },
 
     async deleteOwnedRoom(roomNo: string) {

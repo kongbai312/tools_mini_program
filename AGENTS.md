@@ -6,7 +6,7 @@
 
 - 应用名称：工具箱
 - 技术核心：Vue 3 + TypeScript + uni-app + Vite + Pinia + uview-plus
-- 当前数据均为 Pinia store 内的本地 mock 数据，**无独立后端服务、无 API 请求封装、无数据库**
+- 当前大多数数据由 Pinia store 本地维护；计分器、时光序待办和收入记账使用微信云开发能力同步数据
 - 页面导航由 `src/pages.json` 与 uni API 管理，不使用 Vue Router
 - 底部 Tab 为自定义实现（`src/components/TabBar/index.vue`），Tab 页位于分包，切换使用 `uni.reLaunch`
 - 微信小程序已做**分包 + WebP 图片压缩**，主包约 300KB，总体积约 600KB
@@ -67,12 +67,14 @@
 │   ├── store/               # Pinia 状态（含 mock 数据，位于主包）
 │   │   ├── weather.ts       # 天气、热搜来源与榜单
 │   │   ├── tools.ts         # 工具列表、发现分类、文章
+│   │   ├── income.ts        # 时光序收入记账、本地缓存与云端同步
 │   │   └── user.ts          # 用户资料、主题、缓存
 │   └── static/              # 主包静态资源（Tab 图标 + 全部页面 WebP 图片）
 │       ├── imgs/            # 各页面图片（分包页面通过 import 引用）
 │       └── tabs/            # 底部 Tab SVG 图标
 ├── scripts/
 │   └── compress-images.mjs  # PNG → WebP 压缩脚本
+├── cloudfunctions/          # 微信云函数（计分器、收入记账等）
 ├── vite.config.ts           # Vite 配置（uni 插件）
 ├── tsconfig.json            # TS 配置，路径别名 @/* -> src/*
 ├── index.html               # H5 入口 HTML
@@ -129,6 +131,16 @@
 
 1. `src/subpackage/toolbox/index.vue` 或 `src/subpackage/discovery/index.vue`
 2. `src/store/tools.ts`
+
+### 修改时光序收入记账
+
+优先阅读：
+
+1. `src/subpackage/toolbox/shiguangxu/income/index.vue`
+2. `src/store/income.ts`
+3. `src/utils/incomeCore.ts`
+4. `src/services/incomeCloud.ts`
+5. `cloudfunctions/income/index.js`
 
 ### 修改我的页或用户相关 UI
 
@@ -232,7 +244,7 @@
 ### 状态管理规则
 
 - 使用 Pinia，`defineStore` 定义在 `src/store/` 下，按业务域拆分
-- 当前三个 store：`weather`、`tools`、`user`（位于主包，各分包共享）
+- 当前主要 store：`weather`、`tools`、`user`、`shiguangxu`、`income`、`scoreboard`（位于主包，各分包共享）
 - 多区域共享的页面状态放 store；一次性点击逻辑可留在页面内
 - 页面通过 `useXxxStore()` 引入，配合 `storeToRefs` 或直接访问
 

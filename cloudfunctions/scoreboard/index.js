@@ -172,6 +172,20 @@ function buildSession(room, member) {
   }
 }
 
+function buildRoomSummary(room, member) {
+  return {
+    _id: room._id || member.roomId,
+    roomNo: room.roomNo,
+    title: room.title,
+    type: room.type,
+    role: member.role,
+    playersCount: Array.isArray(room.players) ? room.players.length : 0,
+    recordsCount: Array.isArray(room.records) ? room.records.length : 0,
+    updatedAt: room.updatedAt || 0,
+    createdAt: room.createdAt || 0,
+  }
+}
+
 async function ensureMemberPlayerBinding(room, member) {
   return room
 }
@@ -334,6 +348,53 @@ async function listOwnedRooms(openid) {
       updatedAt: room.updatedAt || 0,
       createdAt: room.createdAt || 0,
     }))
+}
+
+// 当前用户创建或加入过的活跃房间，用于跨房间排行榜选择。
+async function listMyRooms(openid) {
+  const memberships = await db.collection(MEMBERS).where({
+    _openid: openid,
+  }).limit(100).get()
+  if (!memberships.data.length) return []
+
+  const rooms = []
+  for (const membership of memberships.data) {
+    try {
+      const result = await db.collection(ROOMS).doc(membership.roomId).get()
+      const room = result.data
+      if (room && room.status === 'active') {
+        rooms.push(buildRoomSummary(room, membership))
+      }
+    } catch {
+      // 房间不存在时跳过脏数据，不影响其他房间展示。
+    }
+  }
+
+  return rooms.sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0))
+}
+
+// 批量读取同类型房间快照，前端据此汇总玩家、总分和胜负局。
+async function getRankingRooms(event, openid) {
+  const type = normalizeType(event.type)
+  const roomNos = Array.isArray(event.roomNos)
+    ? [...new Set(event.roomNos.map((item) => String(item || '').trim()))].filter((item) => /^\d{6}$/.test(item))
+    : []
+  if (roomNos.length < 2) throw new Error('请选择至少 2 个房间')
+  if (roomNos.length > 20) throw new Error('一次最多选择 20 个房间')
+
+  const rooms = []
+  for (const roomNo of roomNos) {
+    const { room } = await requireSession(roomNo, openid)
+    if (room.type !== type) throw new Error('只能选择同一类型的房间')
+    rooms.push({
+      roomNo: room.roomNo,
+      title: room.title,
+      type: room.type,
+      players: Array.isArray(room.players) ? room.players : [],
+      records: Array.isArray(room.records) ? room.records : [],
+    })
+  }
+  return rooms
 }
 
 // 软删除房间，保留历史数据但不再允许进入。
@@ -602,6 +663,8 @@ exports.main = async (event) => {
 
     if (action === 'createRoom') return ok(await createRoom(event, openid))
     if (action === 'listOwnedRooms') return ok(await listOwnedRooms(openid))
+    if (action === 'listMyRooms') return ok(await listMyRooms(openid))
+    if (action === 'getRankingRooms') return ok(await getRankingRooms(event, openid))
     if (action === 'joinRoom') return ok(await joinRoom(event, openid))
     if (action === 'getRoom') return ok(await getRoomSession(event, openid))
     if (action === 'updateMemberRole') return ok(await updateMemberRole(event, openid))

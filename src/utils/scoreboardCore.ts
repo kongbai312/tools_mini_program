@@ -31,6 +31,23 @@ export interface PlayerRecordStats {
   winRate: number
 }
 
+export interface ScoreboardLeaderboardRoom {
+  roomNo: string
+  title: string
+  type: ScoreboardType
+  players: ScorePlayer[]
+  records: ScoreRecord[]
+}
+
+export interface ScoreboardLeaderboardItem {
+  name: string
+  score: number
+  wins: number
+  losses: number
+  winRate: number
+  roomCount: number
+}
+
 export interface OwnedRoomFilterItem {
   roomNo: string
   ownerMemberKey: string
@@ -117,9 +134,9 @@ export function buildPlayerRecordStats(
     if (record.undoneAt || !record.winnerPlayerId || !stats[record.winnerPlayerId]) return
 
     stats[record.winnerPlayerId].wins += 1
-    record.changes.forEach((change) => {
-      if (change.playerId !== record.winnerPlayerId && change.delta < 0 && stats[change.playerId]) {
-        stats[change.playerId].losses += 1
+    players.forEach((player) => {
+      if (player.id !== record.winnerPlayerId) {
+        stats[player.id].losses += 1
       }
     })
   })
@@ -130,6 +147,50 @@ export function buildPlayerRecordStats(
   })
 
   return stats
+}
+
+export function buildScoreboardLeaderboard(
+  rooms: ScoreboardLeaderboardRoom[],
+): ScoreboardLeaderboardItem[] {
+  const itemMap = new Map<string, ScoreboardLeaderboardItem>()
+
+  rooms.forEach((room) => {
+    const recordStats = buildPlayerRecordStats(room.players, room.records)
+    room.players.forEach((player) => {
+      const name = player.name.trim()
+      if (!name) return
+
+      const item = itemMap.get(name) ?? {
+        name,
+        score: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+        roomCount: 0,
+      }
+      const stats = recordStats[player.id] ?? { wins: 0, losses: 0, winRate: 0 }
+      item.score += player.score
+      item.wins += stats.wins
+      item.losses += stats.losses
+      item.roomCount += 1
+      itemMap.set(name, item)
+    })
+  })
+
+  return [...itemMap.values()]
+    .map((item) => {
+      const totalGames = item.wins + item.losses
+      return {
+        ...item,
+        winRate: totalGames ? Math.round((item.wins / totalGames) * 100) : 0,
+      }
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      if (b.winRate !== a.winRate) return b.winRate - a.winRate
+      if (b.wins !== a.wins) return b.wins - a.wins
+      return a.name.localeCompare(b.name, 'zh-Hans-CN')
+    })
 }
 
 // 撤销权限：房主可撤销所有记录，记分员只能撤销自己的未撤销记录。

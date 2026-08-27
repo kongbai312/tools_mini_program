@@ -128,6 +128,13 @@
                     }
                 },
                 {
+                    "path": "shiguangxu/income/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#FFF7E6"
+                    }
+                },
+                {
                     "path": "wzry-farm/index",
                     "style": {
                         "navigationStyle": "custom",
@@ -160,6 +167,55 @@
                     "style": {
                         "navigationStyle": "custom",
                         "backgroundColor": "#F4F7FB"
+                    }
+                },
+                {
+                    "path": "scoreboard/ranking/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F4F7FB"
+                    }
+                },
+                {
+                    "path": "interview/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F7F4EC"
+                    }
+                },
+                {
+                    "path": "interview/banks/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F7F4EC"
+                    }
+                },
+                {
+                    "path": "interview/bank/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F7F4EC"
+                    }
+                },
+                {
+                    "path": "interview/practice/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F7F4EC"
+                    }
+                },
+                {
+                    "path": "interview/wrong/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F7F4EC"
+                    }
+                },
+                {
+                    "path": "interview/question-form/index",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "backgroundColor": "#F7F4EC"
                     }
                 }
             ]

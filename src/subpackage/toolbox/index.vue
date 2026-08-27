@@ -91,6 +91,26 @@
         </view>
       </view>
 
+      <!-- 学习类 -->
+      <view class="section-block">
+        <view class="section-header">
+          <text class="section-title">学习类</text>
+        </view>
+        <view class="tools-row">
+          <view
+            v-for="tool in learningTools"
+            :key="tool.id"
+            class="tool-item"
+            @tap="onToolTap(tool)"
+          >
+            <view class="tool-icon-wrap tool-icon-wrap--sm">
+              <image class="tool-icon-img" :src="tool.icon" mode="aspectFit" />
+            </view>
+            <text class="tool-name tool-name--sm">{{ tool.name }}</text>
+          </view>
+        </view>
+      </view>
+
       <view style="height: 40rpx;" />
     </view>
 
@@ -112,7 +132,7 @@ import { useToolsStore, type Tool } from '@/store/tools'
 import { useUserStore } from '@/store/user'
 import TabBar from '@/components/TabBar/index.vue'
 import { useNavBarLayout } from '@/composables/useNavBarLayout'
-import { wzryTools, dailyTools, defaultRecentTools } from './assets'
+import { wzryTools, dailyTools, learningTools, defaultRecentTools } from './assets'
 
 const toolsBg = '/static/imgs/tools_bg.png'
 const toolsRole = '/static/imgs/tools_role.png'

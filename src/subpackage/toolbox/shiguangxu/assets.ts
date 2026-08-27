@@ -17,6 +17,7 @@ const SGX_ICON = {
   goal: '/subpackage/toolbox/static/imgs/tools_sgx_mubiaoguanli.svg',
   habit: '/subpackage/toolbox/static/imgs/tools_sgx_xiguandaka.svg',
   pomodoro: '/subpackage/toolbox/static/imgs/tools_sgx_zhuanzhu.svg',
+  income: '/subpackage/toolbox/static/imgs/tools_sgx_jizhang.svg',
 } as const
 
 export const SGX_HUB_PATH = '/subpackage/toolbox/shiguangxu/index'
@@ -70,6 +71,16 @@ export const sgxModules: SgxModule[] = [
     icon: SGX_ICON.pomodoro,
     bgColor: '#FEE2E2',
     path: '/subpackage/toolbox/shiguangxu/pomodoro/index',
+    group: 'life',
+  },
+  {
+    id: 'income',
+    name: '收入记账',
+    desc: '日月年收入统计',
+    emoji: '💰',
+    icon: SGX_ICON.income,
+    bgColor: '#FEF3C7',
+    path: '/subpackage/toolbox/shiguangxu/income/index',
     group: 'life',
   },
 ]

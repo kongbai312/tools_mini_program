@@ -2,6 +2,7 @@ import {
   applyScoreChanges,
   assignMemberToPlayer,
   buildFastSettlementChanges,
+  buildScoreboardLeaderboard,
   buildPlayerRecordStats,
   canManageSeat,
   canUsePlayerSeat,
@@ -116,11 +117,24 @@ const recordStats = buildPlayerRecordStats(
       winnerPlayerId: 'p2',
     },
     {
+      id: 'win-3',
+      actorMemberKey: 'member-a',
+      actorName: '张三',
+      changes: [
+        { playerId: 'p3', delta: 2 },
+        { playerId: 'p1', delta: 2 },
+        { playerId: 'p2', delta: -4 },
+      ],
+      createdAt: 3,
+      undoneAt: 0,
+      winnerPlayerId: 'p3',
+    },
+    {
       id: 'manual-score',
       actorMemberKey: 'member-a',
       actorName: '张三',
       changes: [{ playerId: 'p3', delta: 5 }],
-      createdAt: 3,
+      createdAt: 4,
       undoneAt: 0,
     },
     {
@@ -131,17 +145,75 @@ const recordStats = buildPlayerRecordStats(
         { playerId: 'p3', delta: 6 },
         { playerId: 'p1', delta: -6 },
       ],
-      createdAt: 4,
-      undoneAt: 5,
+      createdAt: 5,
+      undoneAt: 6,
       winnerPlayerId: 'p3',
     },
   ],
 )
 assert(recordStats.p1.wins === 1, 'winner records should count as wins')
-assert(recordStats.p1.losses === 1, 'negative settlement changes should count as losses')
-assert(recordStats.p1.winRate === 50, 'win rate should be rounded from wins over total games')
-assert(recordStats.p2.wins === 1 && recordStats.p2.losses === 1, 'players can have both wins and losses')
-assert(recordStats.p3.wins === 0 && recordStats.p3.losses === 1, 'manual and undone records should not count')
+assert(recordStats.p1.losses === 2, 'non-winners should count as losses even when their score delta is positive')
+assert(recordStats.p1.winRate === 33, 'win rate should be rounded from wins over total games')
+assert(recordStats.p2.wins === 1 && recordStats.p2.losses === 2, 'players can have both wins and losses')
+assert(recordStats.p3.wins === 1 && recordStats.p3.losses === 2, 'all non-winners should count as losses while manual and undone records should not count')
+
+const leaderboard = buildScoreboardLeaderboard([
+  {
+    roomNo: '100001',
+    title: 'room 1',
+    type: 'mahjong',
+    players: [
+      { id: 'p1', name: '艺', score: 13, color: '#111' },
+      { id: 'p2', name: '南', score: -4, color: '#222' },
+      { id: 'p3', name: '西', score: -8, color: '#333' },
+    ],
+    records: [
+      {
+        id: 'r1',
+        actorMemberKey: 'member-a',
+        actorName: '张三',
+        changes: [
+          { playerId: 'p1', delta: 6 },
+          { playerId: 'p2', delta: -3 },
+          { playerId: 'p3', delta: -3 },
+        ],
+        createdAt: 1,
+        undoneAt: 0,
+        winnerPlayerId: 'p1',
+      },
+    ],
+  },
+  {
+    roomNo: '100002',
+    title: 'room 2',
+    type: 'mahjong',
+    players: [
+      { id: 'a1', name: '艺', score: -2, color: '#444' },
+      { id: 'a2', name: '北', score: 10, color: '#555' },
+    ],
+    records: [
+      {
+        id: 'r2',
+        actorMemberKey: 'member-a',
+        actorName: '张三',
+        changes: [
+          { playerId: 'a2', delta: 6 },
+          { playerId: 'a1', delta: -6 },
+        ],
+        createdAt: 2,
+        undoneAt: 0,
+        winnerPlayerId: 'a2',
+      },
+    ],
+  },
+])
+assert(leaderboard.length === 4, 'same-name players should be merged into one leaderboard row')
+assert(leaderboard[0].name === '艺', 'leaderboard should sort by total score first')
+assert(leaderboard[0].score === 11, 'merged player should sum scores across rooms')
+assert(leaderboard[0].roomCount === 2, 'merged player should count selected rooms')
+assert(leaderboard[0].wins === 1 && leaderboard[0].losses === 1, 'merged player should sum win/loss games')
+assert(leaderboard[0].winRate === 50, 'merged player should calculate win rate from total wins and losses')
+assert(leaderboard[1].name === '北', 'score tie should sort before lower scores')
 
 assert(
   canUndoScoreRecord('owner', 'member-b', record),

@@ -27,9 +27,19 @@ export function useNavBarLayout() {
       const sys = uni.getSystemInfoSync()
       const menu = uni.getMenuButtonBoundingClientRect()
       const statusBarHeight = sys.statusBarHeight || 20
-      const navContentHeight = (menu.top - statusBarHeight) * 2 + menu.height
+      const hasValidMenu = Boolean(
+        menu
+          && menu.top > statusBarHeight
+          && menu.height > 0
+          && menu.left > 0,
+      )
+      const navContentHeight = hasValidMenu
+        ? (menu.top - statusBarHeight) * 2 + menu.height
+        : DEFAULT.navContentHeight
       const navBarHeight = statusBarHeight + navContentHeight
-      const capsuleRightGap = sys.screenWidth - menu.left
+      const capsuleRightGap = hasValidMenu
+        ? sys.screenWidth - menu.left
+        : DEFAULT.capsuleRightGap
 
       layout.value = {
         statusBarHeight,

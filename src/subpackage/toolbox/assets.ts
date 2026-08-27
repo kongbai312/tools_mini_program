@@ -7,6 +7,7 @@ export const TOOL_ICONS = {
   wzryNcjsq: '/subpackage/toolbox/static/imgs/tools_wzry_ncjsq.svg',
   rcSgx: '/subpackage/toolbox/static/imgs/tools_rc_sgx.svg',
   rcScoreboard: '/subpackage/toolbox/static/imgs/tools_rc_scoreboard.svg',
+  learningInterview: '/subpackage/toolbox/static/imgs/tools_learning_interview.svg',
 } as const
 
 export const wzryTools: Tool[] = [
@@ -29,6 +30,15 @@ export const dailyTools: Tool[] = [
   },
 ]
 
-export const allTools: Tool[] = [...wzryTools, ...dailyTools]
+export const learningTools: Tool[] = [
+  {
+    id: 'learning_interview',
+    name: '面试题',
+    icon: TOOL_ICONS.learningInterview,
+    url: '/subpackage/toolbox/interview/index',
+  },
+]
+
+export const allTools: Tool[] = [...wzryTools, ...dailyTools, ...learningTools]
 
 export const defaultRecentTools: Tool[] = [...allTools]

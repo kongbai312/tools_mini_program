@@ -69,55 +69,86 @@
         <text v-if="store.errorMessage" class="error-text">{{ store.errorMessage }}</text>
       </view>
 
-      <view v-if="store.recentRooms.length" class="history-section">
-        <view class="owned-header">
-          <text class="section-title owned-title">历史进入的房间</text>
-          <text class="history-count">最近 {{ store.recentRooms.length }} 个</text>
+      <view class="rank-entry" @tap="openMyLeaderboard">
+        <view class="rank-entry-icon">
+          <text class="rank-entry-icon-text">榜</text>
+        </view>
+        <view class="rank-entry-main">
+          <text class="rank-entry-title">我的排行榜</text>
+          <text class="rank-entry-desc">选择同类型多个房间，汇总总分、胜负和胜率</text>
+        </view>
+        <text class="rank-entry-arrow">进入</text>
+      </view>
+
+      <view v-if="store.recentRooms.length" class="room-group">
+        <view class="rank-entry rank-entry--history" @tap="toggleRecentExpanded">
+          <view class="rank-entry-icon rank-entry-icon--history">
+            <text class="rank-entry-icon-text">历</text>
+          </view>
+          <view class="rank-entry-main">
+            <text class="rank-entry-title">历史进入的房间</text>
+            <text class="rank-entry-desc">最近 {{ store.recentRooms.length }} 个，快速回到看过或参与过的房间</text>
+          </view>
+          <text class="rank-entry-arrow">{{ recentExpanded ? '收起' : '展开' }}</text>
         </view>
 
-        <view
-          v-for="room in store.recentRooms"
-          :key="room.roomNo"
-          class="history-card"
-          @tap="openRecentRoom(room.roomNo)"
-        >
-          <view class="history-main">
-            <text class="history-name">{{ room.title }}</text>
-            <text class="history-meta">{{ room.roomNo }} · {{ room.type === 'mahjong' ? '麻将' : '通用' }} · {{ room.playersCount }} 人</text>
-          </view>
-          <view class="history-side">
-            <text class="history-time">{{ formatDate(room.visitedAt) }}</text>
-            <text class="history-enter">进入</text>
+        <view v-if="recentExpanded" class="room-list">
+          <view
+            v-for="room in store.recentRooms"
+            :key="room.roomNo"
+            class="history-card"
+            @tap="openRecentRoom(room.roomNo)"
+          >
+            <view class="history-main">
+              <text class="history-name">{{ room.title }}</text>
+              <text class="history-meta">{{ room.roomNo }} · {{ room.type === 'mahjong' ? '麻将' : '通用' }} · {{ room.playersCount }} 人</text>
+            </view>
+            <view class="history-side">
+              <text class="history-time">{{ formatDate(room.visitedAt) }}</text>
+              <text class="history-enter">进入</text>
+            </view>
           </view>
         </view>
       </view>
 
-      <view class="owned-section">
-        <view class="owned-header">
-          <text class="section-title owned-title">我创建的房间</text>
-          <text class="refresh-text" @tap="loadOwnedRooms">刷新</text>
+      <view class="room-group">
+        <view class="rank-entry rank-entry--owned" @tap="toggleOwnedExpanded">
+          <view class="rank-entry-icon rank-entry-icon--owned">
+            <text class="rank-entry-icon-text">房</text>
+          </view>
+          <view class="rank-entry-main">
+            <text class="rank-entry-title">我创建的房间</text>
+            <text class="rank-entry-desc">{{ ownedRoomsSummary }}</text>
+          </view>
+          <text class="rank-entry-arrow">{{ ownedExpanded ? '收起' : '展开' }}</text>
         </view>
 
-        <view v-if="store.ownedRoomsLoading" class="owned-empty">
-          <text class="owned-empty-text">加载中...</text>
-        </view>
-        <view v-else-if="!store.ownedRooms.length" class="owned-empty">
-          <text class="owned-empty-text">暂无创建过的房间</text>
-        </view>
-        <view v-else>
-          <view
-            v-for="room in store.ownedRooms"
-            :key="room.roomNo"
-            class="owned-card"
-            @tap="openOwnedRoom(room.roomNo)"
-          >
-            <view class="owned-main">
-              <text class="owned-name">{{ room.title }}</text>
-              <text class="owned-meta">{{ room.roomNo }} · {{ room.type === 'mahjong' ? '麻将' : '通用' }} · {{ room.playersCount }} 人</text>
-            </view>
-            <view class="owned-actions">
-              <text class="owned-time">{{ formatDate(room.updatedAt) }}</text>
-              <button class="delete-btn" @tap.stop="confirmDeleteRoom(room.roomNo)">删除</button>
+        <view v-if="ownedExpanded" class="room-list">
+          <view class="room-list-header">
+            <text class="room-list-count">共 {{ store.ownedRooms.length }} 个</text>
+            <text class="refresh-text" @tap.stop="loadOwnedRooms">刷新</text>
+          </view>
+          <view v-if="store.ownedRoomsLoading" class="owned-empty">
+            <text class="owned-empty-text">加载中...</text>
+          </view>
+          <view v-else-if="!store.ownedRooms.length" class="owned-empty">
+            <text class="owned-empty-text">暂无创建过的房间</text>
+          </view>
+          <view v-else>
+            <view
+              v-for="room in store.ownedRooms"
+              :key="room.roomNo"
+              class="owned-card"
+              @tap="openOwnedRoom(room.roomNo)"
+            >
+              <view class="owned-main">
+                <text class="owned-name">{{ room.title }}</text>
+                <text class="owned-meta">{{ room.roomNo }} · {{ room.type === 'mahjong' ? '麻将' : '通用' }} · {{ room.playersCount }} 人</text>
+              </view>
+              <view class="owned-actions">
+                <text class="owned-time">{{ formatDate(room.updatedAt) }}</text>
+                <button class="delete-btn" @tap.stop="confirmDeleteRoom(room.roomNo)">删除</button>
+              </view>
             </view>
           </view>
         </view>
@@ -158,7 +189,14 @@ const nickname = ref(store.getSavedNickname())
 const roomNo = ref('')
 const creating = ref(false)
 const joining = ref(false)
+const recentExpanded = ref(false)
+const ownedExpanded = ref(false)
 const actionBusy = computed(() => creating.value || joining.value)
+const ownedRoomsSummary = computed(() => {
+  if (store.ownedRoomsLoading) return '正在同步你创建的房间'
+  if (!store.ownedRooms.length) return '暂无创建过的房间'
+  return `共 ${store.ownedRooms.length} 个，可进入管理或删除`
+})
 
 onShow(() => {
   // 每次回到首页都刷新历史和房主房间，保证快捷入口尽量新。
@@ -201,12 +239,32 @@ function openRecentRoom(value: string) {
   uni.navigateTo({ url: `/subpackage/toolbox/scoreboard/room/index?roomNo=${value}` })
 }
 
+function toggleRecentExpanded() {
+  recentExpanded.value = !recentExpanded.value
+}
+
+function toggleOwnedExpanded() {
+  ownedExpanded.value = !ownedExpanded.value
+}
+
+function openMyLeaderboard() {
+  uni.navigateTo({
+    url: '/subpackage/toolbox/scoreboard/ranking/index',
+    fail: (error) => {
+      showError(error.errMsg || '排行榜页面暂时无法打开')
+    },
+  })
+}
+
 function formatDate(timestamp: number) {
   if (!timestamp) return ''
   const date = new Date(timestamp)
   const month = `${date.getMonth() + 1}`.padStart(2, '0')
   const day = `${date.getDate()}`.padStart(2, '0')
-  return `${month}-${day}`
+  const hours = `${date.getHours()}`.padStart(2, '0')
+  const minutes = `${date.getMinutes()}`.padStart(2, '0')
+  const seconds = `${date.getSeconds()}`.padStart(2, '0')
+  return `${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 function confirmDeleteRoom(value: string) {
@@ -485,23 +543,105 @@ async function joinRoom() {
   color: #dc2626;
 }
 
-.owned-section {
-  margin-top: 24rpx;
+.rank-entry {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-top: 22rpx;
+  padding: 24rpx;
+  border-radius: 26rpx;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 58%, #eef4ff 100%);
+  box-shadow: 0 10rpx 30rpx rgba(28, 55, 90, 0.08);
 }
 
-.history-section {
-  margin-top: 24rpx;
+.rank-entry--history {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 58%, #eef4ff 100%);
 }
 
-.owned-header {
+.rank-entry--owned {
+  background: linear-gradient(135deg, #eef4ff 0%, #ffffff 58%, #fff7ed 100%);
+}
+
+.rank-entry-icon {
+  width: 74rpx;
+  height: 74rpx;
+  border-radius: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #19324d;
+}
+
+.rank-entry-icon--history {
+  background: #1f9d67;
+}
+
+.rank-entry-icon--owned {
+  background: #19324d;
+}
+
+.rank-entry-icon-text {
+  color: #ffd36a;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.rank-entry-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-entry-title {
+  display: block;
+  font-size: 30rpx;
+  color: #111827;
+  font-weight: 900;
+}
+
+.rank-entry-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: #667085;
+}
+
+.rank-entry-arrow {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: #1f9d67;
+  font-weight: 800;
+}
+
+.room-group {
+  margin-top: 22rpx;
+}
+
+.room-group .rank-entry {
+  margin-top: 0;
+}
+
+.room-list {
+  margin-top: 12rpx;
+  padding: 12rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1rpx solid rgba(25, 50, 77, 0.05);
+  box-sizing: border-box;
+}
+
+.room-list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14rpx;
+  padding: 0 6rpx 12rpx;
 }
 
-.owned-title {
-  margin-bottom: 0;
+.room-list-count {
+  font-size: 23rpx;
+  color: #8b95a1;
+  font-weight: 700;
 }
 
 .refresh-text {
@@ -509,13 +649,6 @@ async function joinRoom() {
   font-size: 24rpx;
   color: #1f9d67;
   font-weight: 800;
-}
-
-.history-count {
-  padding: 8rpx 10rpx;
-  font-size: 23rpx;
-  color: #8b95a1;
-  font-weight: 700;
 }
 
 .owned-empty,
@@ -591,8 +724,9 @@ async function joinRoom() {
 }
 
 .history-time {
-  font-size: 22rpx;
+  font-size: 20rpx;
   color: #98a2b3;
+  white-space: nowrap;
 }
 
 .history-enter {
@@ -616,8 +750,9 @@ async function joinRoom() {
 }
 
 .owned-time {
-  font-size: 22rpx;
+  font-size: 20rpx;
   color: #98a2b3;
+  white-space: nowrap;
 }
 
 .delete-btn {
